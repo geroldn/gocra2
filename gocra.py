@@ -73,7 +73,7 @@ class Serie:
                 line2 = line2 + self.pairings[n][i]['string'].ljust(rw) + '|'
             for i in range(self.numberOfRounds - self.currentRoundNumber):
                 line2 = line2 + ' '.ljust(rw) + '|'
-            line2 = line2 + str(p.startRating).rjust(4) + ' - ' + str(p.resultRating).rjust(4)
+            line2 = line2 + str(p.startRating).rjust(5) + ' - ' + str(p.resultRating).rjust(4)
             print(line2)
         print(line1)
 
