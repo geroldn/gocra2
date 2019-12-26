@@ -7,7 +7,7 @@ class Settings:
     s_home = '/Users/gerold/dev/python/gocra/'
     s_tfile = 'UGC-2019-1.xml'
     s_name_column_width = 32
-    s_ronde_column_width = 12
+    s_ronde_column_width = 10
 
 class Serie:
     def __init__(self, gocra):
@@ -59,7 +59,7 @@ class Serie:
     def regResult(self, nParticipant, nRound):
         participant = self.participants[nParticipant]
         result = self.results[nParticipant][nRound]
-        result['color'] = 'X'
+        result['color'] = None
         for tr in self.doc['Tournament']['TournamentRound']:
             if int(tr['RoundNumber']) == nRound + 1 :
                 break
@@ -67,15 +67,32 @@ class Serie:
             if int(tp['Black']) == participant.id:
                 result['color'] = 'B'
                 result['opponent_nr'] = self.getPNr(int(tp['White']))
+                if tp['Result'] == '1-0':
+                    result['win'] = True
+                else:
+                    result['win'] = False
                 break
             if int(tp['White']) == participant.id:
                 result['color'] = 'W'
                 result['opponent_nr'] = self.getPNr(int(tp['Black']))
+                if tp['Result'] == '0-1':
+                    result['win'] = True
+                else:
+                    result['win'] = False
                 break
-        if result['color'] == 'X':
-            result['string']  = '   -'
+        if result['color'] == None:
+            rstr  = '   -'
         else:
-            result['string'] = ' ' + str(result['opponent_nr']) + '/' + result['color']
+            result['handicap'] = int(tp['Handicap'])
+            rstr = ' ' + str(result['opponent_nr'])
+            if result['win']:
+                rstr = rstr + '+'
+            else:
+                rstr = rstr + '-'
+            rstr = rstr + '/' + result['color']
+            if result['handicap'] > 0:
+                rstr = rstr + str(result['handicap'])
+        result['string'] = rstr
 
 
 
