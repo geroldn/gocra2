@@ -2,12 +2,56 @@
 
 import os
 import xmltodict
+from math import exp
 
 class Settings:
     s_home = '/Users/gerold/dev/python/gocra/'
     s_tfile = 'UGC-2019-1.xml'
     s_name_column_width = 32
     s_ronde_column_width = 10
+
+class RatingParameters:
+    def __init__(self, gocra):
+        self.gocra = gocra
+        self.rparms = []
+
+    def rpimport(self, file):
+        if os.path.exists(file):
+            with open(file) as fd:
+                self.doc = xmltodict.parse(fd.read())
+        else:
+            self.gocra.messages.append('No such file: ' + file)
+
+    def rpreg(self, gocra):
+        self.epsilon = float(self.doc['RatingParameters']['Epsilon'])
+        for r in self.doc['RatingParameters']['Conlist']['Conitem']:
+            self.rparms.append({
+                'Gor': int(r['Gor']),
+                'Con': int(r['Con']),
+                'A': int(r['A'])
+            })
+        print(self.rparms)
+
+    def getGain(self, color, rating, oppRating, handicap, bWin):
+        e = 0.016
+        if rating < oppRating:
+            r = rating
+        else:
+            r = oppRating
+        c = 70
+        a = 155
+        hr = 0.0
+        if handicap > 0:
+            if color == 'Black':
+                hr = 100*(handicap - 0.5)
+            elif color == 'White':
+                hr = 100*(0.5 - handicap)
+            else:
+                print('Illegal color')
+                return None
+        diff = oppRating - rating - hr
+        print('Diff: ' + str(diff))
+        return c*(bWin - 1 / (exp(diff/a) + 1) + e/2)
 
 class Serie:
     def __init__(self, gocra):
@@ -165,6 +209,19 @@ class Gocra:
         self.rl = Ratinglist()
         self.messages = []
         self.serie = Serie(self)
+        self.rparms = RatingParameters(self)
+
+    def readRParms(self):
+        self.rparms.rpimport(Settings.s_home + 'gocra/ratingParameters.xml')
+        self.rparms.rpreg(self)
+        print('Epsilon:')
+        print(self.rparms.epsilon)
+        print(self.rparms.getGain('Black', 1000, 1100, 0, True))
+        print(self.rparms.getGain('Black', 1000, 1100, 1, True))
+        print(self.rparms.getGain('Black', 1000, 1100, 2, True))
+        print(self.rparms.getGain('Black', 1100, 1000, 0, True))
+        print(self.rparms.getGain('Black', 1100, 1000, 1, True))
+        print(self.rparms.getGain('Black', 1100, 1000, 2, True))
 
     def readSerie(self):
         self.serie.timport(Settings.s_home + Settings.s_tfile)
@@ -180,16 +237,21 @@ class Gocra:
         print('Number of rounds: ' + str(self.serie.numberOfRounds))
         self.serie.print()
 
+
+
     def printMessages(self):
         for line in self.messages:
             print(line)
         self.messages[:] = []
 
 def dispatch(gocra):
-    print('\n <e>dit, <q>uit, <s>erie  .....')
+    print('\n <r>ating, <q>uit, <s>erie  .....')
     cmd = input('Enter command: ')
     if cmd == 'q':
         return False
+    elif cmd == 'r':
+        gocra.readRParms()
+        return True
     elif cmd == 's':
         gocra.readSerie()
         return True
