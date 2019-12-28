@@ -8,9 +8,9 @@ class Settings:
     s_home = '/Users/gerold/dev/python/gocra/'
     s_tfile = 'UGC-2019-1.xml'
     s_name_column_width = 32
-    s_ronde_column_width = 10
+    s_ronde_column_width = 15
 
-class RatingParameters:
+class RatingSystem:
     def __init__(self, gocra):
         self.gocra = gocra
         self.rparms = []
@@ -42,16 +42,16 @@ class RatingParameters:
         a = 155
         hr = 0.0
         if handicap > 0:
-            if color == 'Black':
+            if color == 'B':
                 hr = 100*(handicap - 0.5)
-            elif color == 'White':
+            elif color == 'W':
                 hr = 100*(0.5 - handicap)
             else:
                 print('Illegal color')
                 return None
         diff = oppRating - rating - hr
         print('Diff: ' + str(diff))
-        return c*(bWin - 1 / (exp(diff/a) + 1) + e/2)
+        return c*(bWin - 1 / (exp(diff/a) + 1) - e/2)
 
 class Serie:
     def __init__(self, gocra):
@@ -127,8 +127,11 @@ class Serie:
         if result['color'] == None:
             rstr  = '   -'
         else:
+            print(result)
+            opponent = self.participants[result['opponent_nr']-1]
             result['handicap'] = int(tp['Handicap'])
-            rstr = ' ' + str(result['opponent_nr'])
+            #rstr = ' ' + str(result['opponent_nr'])
+            rstr = '{0:3d}'.format( result['opponent_nr'])
             if result['win']:
                 rstr = rstr + '+'
             else:
@@ -136,7 +139,10 @@ class Serie:
             rstr = rstr + '/' + result['color']
             if result['handicap'] > 0:
                 rstr = rstr + str(result['handicap'])
+            delta = self.gocra.rsys.getGain(result['color'], participant.startRating, opponent.startRating, result['handicap'], result['win'])
+            rstr = rstr + '({0:+5.1f})'.format(delta)
         result['string'] = rstr
+
 
 
 
@@ -209,19 +215,19 @@ class Gocra:
         self.rl = Ratinglist()
         self.messages = []
         self.serie = Serie(self)
-        self.rparms = RatingParameters(self)
+        self.rsys = RatingSystem(self)
 
     def readRParms(self):
-        self.rparms.rpimport(Settings.s_home + 'gocra/ratingParameters.xml')
-        self.rparms.rpreg(self)
+        self.rsys.rpimport(Settings.s_home + 'gocra/ratingParameters.xml')
+        self.rsys.rpreg(self)
         print('Epsilon:')
-        print(self.rparms.epsilon)
-        print(self.rparms.getGain('Black', 1000, 1100, 0, True))
-        print(self.rparms.getGain('Black', 1000, 1100, 1, True))
-        print(self.rparms.getGain('Black', 1000, 1100, 2, True))
-        print(self.rparms.getGain('Black', 1100, 1000, 0, True))
-        print(self.rparms.getGain('Black', 1100, 1000, 1, True))
-        print(self.rparms.getGain('Black', 1100, 1000, 2, True))
+        print(self.rsys.epsilon)
+        print(self.rsys.getGain('B', 1000, 1100, 0, True))
+        print(self.rsys.getGain('B', 1000, 1100, 1, True))
+        print(self.rsys.getGain('B', 1000, 1100, 2, True))
+        print(self.rsys.getGain('B', 1100, 1000, 0, True))
+        print(self.rsys.getGain('B', 1100, 1000, 1, True))
+        print(self.rsys.getGain('B', 1100, 1000, 2, True))
 
     def readSerie(self):
         self.serie.timport(Settings.s_home + Settings.s_tfile)
