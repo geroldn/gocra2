@@ -32,14 +32,35 @@ class RatingSystem:
             })
         print(self.rparms)
 
+    def getParms(self, rating):
+        rp_low = self.rparms[0]
+        rp_high = self.rparms[0]
+        for rp in self.rparms:
+            if rating < rp['Gor']:
+                rp_high = rp
+                break
+            rp_low = rp
+        if rp_high == None:
+            rp_high = rp_low
+        r1 = rp_low['Gor']
+        r2 = rp_high['Gor']
+        c1 = rp_low['Con']
+        c2 = rp_high['Con']
+        a1 = rp_low['A']
+        a2 = rp_high['A']
+        c = c1 + (rating - r1) * (c2 - c1) / (r2 - r1)
+        a = a1 + (rating - r1) * (a2 - a1) / (r2 - r1)
+        print('{0: 4f}:{1: 4f}:{2: 4f}:{3: 4f}:{4: 4f}:{5: 4f}:{6: 4f}:{7: 4f}:{8: 4f}'.format(rating, r1, r2, c, c1, c2, a, a1, a2))
+        return {'Con': c, 'A': a}
+
     def getGain(self, color, rating, oppRating, handicap, bWin):
         e = 0.016
         if rating < oppRating:
             r = rating
         else:
             r = oppRating
-        c = 70
-        a = 155
+        c = self.getParms(r)['Con']
+        a = self.getParms(r)['A']
         hr = 0.0
         if handicap > 0:
             if color == 'B':
@@ -80,7 +101,6 @@ class Serie:
                     , int(p['Id'])))
                 self.participants.append(sParticipant)
         self.setNr()
-        self.setStartRatings()
         self.calcResultRatings()
         for n, p in enumerate(self.participants):
             self.results.append([])
@@ -91,10 +111,6 @@ class Serie:
     def setNr(self):
         for n, p in enumerate(self.participants, start=1):
             p.setNr(n)
-
-    def setStartRatings(self):
-        for p in self.participants:
-            p.startRating = p.rating
 
     def calcResultRatings(self):
         for p in self.participants:
@@ -140,6 +156,7 @@ class Serie:
             if result['handicap'] > 0:
                 rstr = rstr + str(result['handicap'])
             delta = self.gocra.rsys.getGain(result['color'], participant.startRating, opponent.startRating, result['handicap'], result['win'])
+            participant.resultRating = participant.resultRating + delta
             rstr = rstr + '({0:+5.1f})'.format(delta)
         result['string'] = rstr
 
@@ -167,7 +184,7 @@ class Serie:
                 line2 = line2 + self.results[n][i]['string'].ljust(rw) + '|'
             for i in range(self.numberOfRounds - self.currentRoundNumber):
                 line2 = line2 + ' '.ljust(rw) + '|'
-            line2 = line2 + str(p.startRating).rjust(5) + ' - ' + str(p.resultRating).rjust(4)
+            line2 = line2 + ' {0:4.0f} - {1:4.0f}'.format(p.startRating, p.resultRating)
             print(line2)
         print(line1)
 
@@ -178,8 +195,8 @@ class Participant:
         self.rating = rating
         self.id = _id
         self.nr = 0
-        self.startRating = 0
-        self.resultRating = 0
+        self.startRating = rating
+        self.resultRating = rating
 
     def setNr(self, nr):
         self.nr = nr
@@ -266,6 +283,7 @@ def dispatch(gocra):
 
 def main():
     gocra = Gocra()
+    gocra.readRParms()
     go_on = True
     while go_on :
         gocra.rl.print()
