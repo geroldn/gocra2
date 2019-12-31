@@ -5,8 +5,10 @@ import xmltodict
 from math import exp
 
 class Settings:
-    s_home = '/Users/gerold/dev/python/gocra/'
-    s_tfile = 'UGC-2019-1.xml'
+    gocra_home = '/Users/gerold/dev/python/gocra/'
+    s_home = '/Users/gerold/'
+    #s_tfile = 'UGC-2019-1.xml'
+    s_tfile = 'Toernooi_van_Utrecht.xml'
     s_name_column_width = 32
     s_ronde_column_width = 15
 
@@ -19,8 +21,10 @@ class RatingSystem:
         if os.path.exists(file):
             with open(file) as fd:
                 self.doc = xmltodict.parse(fd.read())
+            return True
         else:
             self.gocra.messages.append('No such file: ' + file)
+            return False
 
     def rpreg(self, gocra):
         self.epsilon = float(self.doc['RatingParameters']['Epsilon'])
@@ -55,10 +59,13 @@ class RatingSystem:
 
     def getGain(self, color, rating, oppRating, handicap, bWin):
         e = 0.016
+        '''
         if rating < oppRating:
             r = rating
         else:
             r = oppRating
+        '''
+        r = rating
         c = self.getParms(r)['Con']
         a = self.getParms(r)['A']
         hr = 0.0
@@ -82,8 +89,10 @@ class Serie:
         if os.path.exists(file):
             with open(file) as fd:
                 self.doc = xmltodict.parse(fd.read())
+            return True
         else:
             self.gocra.messages.append('No such file: ' + file)
+            return False
 
     def treg(self):
         self.numberOfRounds = int(self.doc['Tournament']['NumberOfRounds'])
@@ -155,13 +164,12 @@ class Serie:
             rstr = rstr + '/' + result['color']
             if result['handicap'] > 0:
                 rstr = rstr + str(result['handicap'])
+            else:
+                rstr = rstr + ' '
             delta = self.gocra.rsys.getGain(result['color'], participant.startRating, opponent.startRating, result['handicap'], result['win'])
             participant.resultRating = participant.resultRating + delta
             rstr = rstr + '({0:+5.1f})'.format(delta)
         result['string'] = rstr
-
-
-
 
     def getPNr(self, _id):
         nr = 0
@@ -184,7 +192,7 @@ class Serie:
                 line2 = line2 + self.results[n][i]['string'].ljust(rw) + '|'
             for i in range(self.numberOfRounds - self.currentRoundNumber):
                 line2 = line2 + ' '.ljust(rw) + '|'
-            line2 = line2 + ' {0:4.0f} - {1:4.0f}'.format(p.startRating, p.resultRating)
+            line2 = line2 + ' {0:4.0f} -> {1:4.0f}'.format(p.startRating, p.resultRating)
             print(line2)
         print(line1)
 
@@ -235,30 +243,29 @@ class Gocra:
         self.rsys = RatingSystem(self)
 
     def readRParms(self):
-        self.rsys.rpimport(Settings.s_home + 'gocra/ratingParameters.xml')
-        self.rsys.rpreg(self)
-        print('Epsilon:')
-        print(self.rsys.epsilon)
-        print(self.rsys.getGain('B', 1000, 1100, 0, True))
-        print(self.rsys.getGain('B', 1000, 1100, 1, True))
-        print(self.rsys.getGain('B', 1000, 1100, 2, True))
-        print(self.rsys.getGain('B', 1100, 1000, 0, True))
-        print(self.rsys.getGain('B', 1100, 1000, 1, True))
-        print(self.rsys.getGain('B', 1100, 1000, 2, True))
+        if self.rsys.rpimport(Settings.gocra_home + 'gocra/ratingParameters.xml'):
+            self.rsys.rpreg(self)
+            print('Epsilon:')
+            print(self.rsys.epsilon)
+            print(self.rsys.getGain('B', 1000, 1100, 0, True))
+            print(self.rsys.getGain('B', 1000, 1100, 1, True))
+            print(self.rsys.getGain('B', 1000, 1100, 2, True))
+            print(self.rsys.getGain('B', 1100, 1000, 0, True))
+            print(self.rsys.getGain('B', 1100, 1000, 1, True))
+            print(self.rsys.getGain('B', 1100, 1000, 2, True))
+            return True
+        else:
+            return False
+
 
     def readSerie(self):
-        self.serie.timport(Settings.s_home + Settings.s_tfile)
-        self.serie.treg()
-        '''
-        for k, v in self.serie.doc['Tournament'].items():
-            print(k)
-        for k in self.serie.doc['Tournament']['IndividualParticipant']:
-            print(k)
-        for r in self.serie.doc['Tournament']['TournamentRound']:
-            print(r)
-        '''
-        print('Number of rounds: ' + str(self.serie.numberOfRounds))
-        self.serie.print()
+        if self.serie.timport(Settings.s_home + Settings.s_tfile):
+            self.serie.treg()
+            print('Number of rounds: ' + str(self.serie.numberOfRounds))
+            self.serie.print()
+            return True
+        else:
+            return False
 
 
 
@@ -276,20 +283,23 @@ def dispatch(gocra):
         gocra.readRParms()
         return True
     elif cmd == 's':
-        gocra.readSerie()
-        return True
+        if gocra.readSerie():
+            return True
+        else:
+            return False
     else:
         return True
 
 def main():
     gocra = Gocra()
-    gocra.readRParms()
-    go_on = True
+    if gocra.readRParms():
+        go_on = True
+    else:
+        go_on = False
     while go_on :
-        gocra.rl.print()
-        if len(gocra.messages) > 0:
-            gocra.printMessages()
         go_on = dispatch(gocra)
+    if len(gocra.messages) > 0:
+        gocra.printMessages()
 
 main()
 
