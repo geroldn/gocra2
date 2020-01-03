@@ -3,12 +3,13 @@
 import os
 import xmltodict
 from math import exp
+import re
 
 class Settings:
     gocra_home = '/Users/gerold/dev/python/gocra/'
     s_home = '/Users/gerold/'
-    #s_tfile = 'UGC-2019-1.xml'
     s_tfile = 'Toernooi_van_Utrecht.xml'
+    s_tfile = 'UGC-2019-1.xml'
     s_name_column_width = 32
     s_ronde_column_width = 15
 
@@ -34,7 +35,6 @@ class RatingSystem:
                 'Con': int(r['Con']),
                 'A': int(r['A'])
             })
-        print(self.rparms)
 
     def getParms(self, rating):
         rp_low = self.rparms[0]
@@ -54,11 +54,10 @@ class RatingSystem:
         a2 = rp_high['A']
         c = c1 + (rating - r1) * (c2 - c1) / (r2 - r1)
         a = a1 + (rating - r1) * (a2 - a1) / (r2 - r1)
-        print('{0: 4f}:{1: 4f}:{2: 4f}:{3: 4f}:{4: 4f}:{5: 4f}:{6: 4f}:{7: 4f}:{8: 4f}'.format(rating, r1, r2, c, c1, c2, a, a1, a2))
         return {'Con': c, 'A': a}
 
     def getGain(self, color, rating, oppRating, handicap, bWin):
-        e = 0.016
+        e = self.epsilon
         '''
         if rating < oppRating:
             r = rating
@@ -78,7 +77,6 @@ class RatingSystem:
                 print('Illegal color')
                 return None
         diff = oppRating - rating - hr
-        print('Diff: ' + str(diff))
         return c*(bWin - 1 / (exp(diff/a) + 1) - e/2)
 
 class Serie:
@@ -95,6 +93,7 @@ class Serie:
             return False
 
     def treg(self):
+        self.name = self.doc['Tournament']['Name']
         self.numberOfRounds = int(self.doc['Tournament']['NumberOfRounds'])
         self.currentRoundNumber = int(self.doc['Tournament']['CurrentRoundNumber'])
         self.takeCurrentRoundInAccount = self.doc['Tournament']['TakeCurrentRoundInAccount']
@@ -152,7 +151,6 @@ class Serie:
         if result['color'] == None:
             rstr  = '   -'
         else:
-            print(result)
             opponent = self.participants[result['opponent_nr']-1]
             result['handicap'] = int(tp['Handicap'])
             #rstr = ' ' + str(result['opponent_nr'])
@@ -168,6 +166,10 @@ class Serie:
                 rstr = rstr + ' '
             delta = self.gocra.rsys.getGain(result['color'], participant.startRating, opponent.startRating, result['handicap'], result['win'])
             participant.resultRating = participant.resultRating + delta
+            while participant.resultRating > participant.newrank.round_rating() + 100:
+                participant.newrank.rankUp()
+            while participant.resultRating < participant.newrank.round_rating() - 100:
+                participant.newrank.rankDown()
             rstr = rstr + '({0:+5.1f})'.format(delta)
         result['string'] = rstr
 
@@ -183,23 +185,72 @@ class Serie:
         nw = Settings.s_name_column_width
         rw = Settings.s_ronde_column_width
         line1 = '+' + '+'.rjust(nw, '-')
+        print(line1)
+        line1 = '| {0}'.format(self.name)
+        print(line1)
+        line1 = '+' + '+'.rjust(nw, '-')
         for i in range(self.numberOfRounds):
             line1 = line1 + (' Ronde ' + str(i+1) + ' ').ljust(rw , '-') + '+'
         print(line1)
         for n, p in enumerate(self.participants):
-            line2 = ('|' + str(p.nr).rjust(2) + ' ' + p.name + ' ('+ p.strength + ')').ljust(nw) + '|'
+            line2 = ('|' + str(p.nr).rjust(2) + ' ' + p.name + ' ('+ p.rank.rank + ')').ljust(nw) + '|'
             for i in range(self.currentRoundNumber):
                 line2 = line2 + self.results[n][i]['string'].ljust(rw) + '|'
             for i in range(self.numberOfRounds - self.currentRoundNumber):
                 line2 = line2 + ' '.ljust(rw) + '|'
             line2 = line2 + ' {0:4.0f} -> {1:4.0f}'.format(p.startRating, p.resultRating)
+            if p.rank.nValue > p.newrank.nValue:
+                line2 = line2 + ' ' + p.newrank.rank + ' :('
+            if p.rank.nValue < p.newrank.nValue:
+                line2 = line2 + ' ' + p.newrank.rank + ' :)'
             print(line2)
         print(line1)
 
+class Rank:
+    def __init__(self, rank):
+        self.rank = rank
+        self.type = re.split("[1-9]+", rank)[1]
+        if self.type == 'd':
+            self.nValue = int(re.split("d", rank)[0])
+        if self.type == 'k':
+            self.nValue = -int(re.split("k", rank)[0])
+
+    def rating2rank(self, rating):
+        r = round(rating/100)
+        if r > 20:
+            self.nValue = r - 20
+            self.type = 'd'
+        else:
+            self.nValue = 21 - r
+            self.type = 'k'
+        self.rank = str(abs(self.nValue)) + self.type
+
+    def rankUp(self):
+        self.nValue = self.nValue + 1
+        if self.nValue == 0:
+            self.nValue = 1
+            self.type = 'd'
+        self.rank = str(abs(self.nValue)) + self.type
+
+    def rankDown(self):
+        self.nValue = self.nValue - 1
+        if self.nValue == 0:
+            self.nValue = -1
+            self.type = 'k'
+        self.rank = str(abs(self.nValue)) + self.type
+
+    def round_rating(self):
+        if self.type == 'k':
+            rating = (21 + self.nValue) * 100
+        else:
+            rating = (20 + self.nValue) * 100
+        return rating
+
 class Participant:
-    def __init__(self, name, strength, rating, _id):
+    def __init__(self, name, rank, rating, _id):
         self.name = name
-        self.strength = strength
+        self.rank = Rank(rank)
+        self.newrank = Rank(rank)
         self.rating = rating
         self.id = _id
         self.nr = 0
@@ -245,14 +296,6 @@ class Gocra:
     def readRParms(self):
         if self.rsys.rpimport(Settings.gocra_home + 'gocra/ratingParameters.xml'):
             self.rsys.rpreg(self)
-            print('Epsilon:')
-            print(self.rsys.epsilon)
-            print(self.rsys.getGain('B', 1000, 1100, 0, True))
-            print(self.rsys.getGain('B', 1000, 1100, 1, True))
-            print(self.rsys.getGain('B', 1000, 1100, 2, True))
-            print(self.rsys.getGain('B', 1100, 1000, 0, True))
-            print(self.rsys.getGain('B', 1100, 1000, 1, True))
-            print(self.rsys.getGain('B', 1100, 1000, 2, True))
             return True
         else:
             return False
@@ -261,7 +304,6 @@ class Gocra:
     def readSerie(self):
         if self.serie.timport(Settings.s_home + Settings.s_tfile):
             self.serie.treg()
-            print('Number of rounds: ' + str(self.serie.numberOfRounds))
             self.serie.print()
             return True
         else:
@@ -275,13 +317,10 @@ class Gocra:
         self.messages[:] = []
 
 def dispatch(gocra):
-    print('\n <r>ating, <q>uit, <s>erie  .....')
+    print('\n <q>uit, <s>erie  .....')
     cmd = input('Enter command: ')
     if cmd == 'q':
         return False
-    elif cmd == 'r':
-        gocra.readRParms()
-        return True
     elif cmd == 's':
         if gocra.readSerie():
             return True
@@ -292,7 +331,10 @@ def dispatch(gocra):
 
 def main():
     gocra = Gocra()
-    if gocra.readRParms():
+    if (
+        gocra.readRParms()
+        and gocra.readSerie()
+    ):
         go_on = True
     else:
         go_on = False
