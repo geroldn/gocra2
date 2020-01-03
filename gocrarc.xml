@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Settings>
+  <Epsilon>0.016</Epsilon>
+  <s_name_column_width>32</s_name_column_width>
+  <s_ronde_column_width>15</s_ronde_column_width>
+  <gocra_home>Enter the gocra home directory here.</gocra_home>
+  <s_home>Enter the directory holding the macMahon tournament xml here.</s_home>
+  <s_tfile>The macMahon xml file</s_tfile>
+</Settings>

@@ -1,17 +1,32 @@
 #!/Applications/anaconda/anaconda3/bin/python
 
 import os
+import sys
 import xmltodict
 from math import exp
 import re
 
 class Settings:
-    gocra_home = '/Users/gerold/dev/python/gocra/'
-    s_home = '/Users/gerold/'
-    s_tfile = 'Toernooi_van_Utrecht.xml'
-    s_tfile = 'UGC-2019-1.xml'
-    s_name_column_width = 32
-    s_ronde_column_width = 15
+    def __init__(self):
+        self.gocra_home = os.path.dirname(os.path.realpath(sys.argv[0])) + '/../'
+        if self.s_import(self.gocra_home + 'gocrarc.xml'):
+            self.reg()
+
+    def s_import(self, file):
+        if os.path.exists(file):
+            with open(file) as fd:
+                self.doc = xmltodict.parse(fd.read())
+            return True
+        else:
+            self.gocra.messages.append('No such file: ' + file)
+            return False
+
+    def reg(self):
+        self.s_home = self.doc['Settings']['s_home']
+        self.s_tfile = self.doc['Settings']['s_tfile']
+        self.s_name_column_width = int(self.doc['Settings']['s_name_column_width'])
+        self.s_ronde_column_width = int(self.doc['Settings']['s_ronde_column_width'])
+
 
 class RatingSystem:
     def __init__(self, gocra):
@@ -182,8 +197,8 @@ class Serie:
         return nr
 
     def print(self):
-        nw = Settings.s_name_column_width
-        rw = Settings.s_ronde_column_width
+        nw = self.gocra.settings.s_name_column_width
+        rw = self.gocra.settings.s_ronde_column_width
         line1 = '+' + '+'.rjust(nw, '-')
         print(line1)
         line1 = '| {0}'.format(self.name)
@@ -288,13 +303,14 @@ class Ratinglist:
 
 class Gocra:
     def __init__(self):
+        self.settings = Settings()
         self.rl = Ratinglist()
         self.messages = []
         self.serie = Serie(self)
         self.rsys = RatingSystem(self)
 
     def readRParms(self):
-        if self.rsys.rpimport(Settings.gocra_home + 'gocra/ratingParameters.xml'):
+        if self.rsys.rpimport(self.settings.gocra_home + 'gocra/ratingParameters.xml'):
             self.rsys.rpreg(self)
             return True
         else:
@@ -302,7 +318,7 @@ class Gocra:
 
 
     def readSerie(self):
-        if self.serie.timport(Settings.s_home + Settings.s_tfile):
+        if self.serie.timport(self.settings.s_home + self.settings.s_tfile):
             self.serie.treg()
             self.serie.print()
             return True
