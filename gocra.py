@@ -2,6 +2,7 @@
 
 import os
 import sys
+import collections
 import xmltodict
 from math import exp
 import re
@@ -284,35 +285,36 @@ class Participant:
 
     def setNr(self, nr):
         self.nr = nr
-'''
-class Rating:
-    def __init__(self, date, rating):
-        self.rating = {
-                "date": date,
-                "rating": rating
-                }
-'''
 
 class Ratinglist:
-    def __init__(self, gorca):
-        self.participants = []
+    def __init__(self, gocra):
+        self.gocra = gocra
+        self.members = []
         self.series = []
-        file = gorca.settings.gorca_home + UGC.xml
+
+    def initRatinglist(self):
+        file = self.gocra.settings.gocra_home + 'UGC.xml'
         if os.path.exists(file):
             with open(file) as fd:
                 self.doc = xmltodict.parse(fd.read())
-            return True
+            print(self.doc)
         else:
             print('Ratingfile ' + file + ' bestaat niet. Aanmaken op basis van huidige serie?')
             cmd = input('j/n : ')
             if cmd == 'j':
-               self.initRatinglist()
-               return False
+               self.firstRatinglist(self.gocra.serie)
             else:
-               return False
+               pass
 
-    def initRatinlist:
-        pass
+    def firstRatinglist(self, serie):
+        self.doc = collections.OrderedDict()
+        self.doc['Club'] = collections.OrderedDict()
+        self.doc['Club']['Name'] = 'UGC'
+        self.doc['Club']['Member'] = []
+        for p in serie.participants:
+            self.doc['Club']['Member'].append(collections.OrderedDict([('Name',p.name), ('Id',p.id)]))
+        print(self.doc)
+
 
     def addSeries(self, name, start, end):
         self.series.append({
