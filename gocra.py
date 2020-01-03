@@ -109,6 +109,8 @@ class Serie:
 
     def treg(self):
         self.name = self.doc['Tournament']['Name']
+        self.year = int(re.split('-', self.name)[1])
+        self.snr = int(re.split('-', self.name)[2])
         self.numberOfRounds = int(self.doc['Tournament']['NumberOfRounds'])
         self.currentRoundNumber = int(self.doc['Tournament']['CurrentRoundNumber'])
         self.takeCurrentRoundInAccount = self.doc['Tournament']['TakeCurrentRoundInAccount']
@@ -147,39 +149,47 @@ class Serie:
             if int(tr['RoundNumber']) == nRound + 1 :
                 break
         for tp in tr['Pairing']:
-            if int(tp['Black']) == participant.id:
+            if tp['PairingWithBye'] == 'true':
+                pass
+            elif int(tp['Black']) == participant.id:
                 result['color'] = 'B'
                 result['opponent_nr'] = self.getPNr(int(tp['White']))
                 if tp['Result'] == '1-0':
-                    result['win'] = True
+                    result['win'] = '+'
+                elif tp['Result'] == '0-1':
+                    result['win'] = '-'
                 else:
-                    result['win'] = False
+                    result['win'] = '='
                 break
-            if int(tp['White']) == participant.id:
+            elif int(tp['White']) == participant.id:
                 result['color'] = 'W'
                 result['opponent_nr'] = self.getPNr(int(tp['Black']))
                 if tp['Result'] == '0-1':
-                    result['win'] = True
+                    result['win'] = '+'
+                elif tp['Result'] == '1-0':
+                    result['win'] = '-'
                 else:
-                    result['win'] = False
+                    result['win'] = '='
                 break
-        if result['color'] == None:
+        if tp['PairingWithBye'] == 'true':
+            rstr  = '   ='
+        elif result['color'] == None:
             rstr  = '   -'
+        elif result['win'] == '=':
+            rstr  = '   ='
         else:
             opponent = self.participants[result['opponent_nr']-1]
             result['handicap'] = int(tp['Handicap'])
             #rstr = ' ' + str(result['opponent_nr'])
             rstr = '{0:3d}'.format( result['opponent_nr'])
-            if result['win']:
-                rstr = rstr + '+'
-            else:
-                rstr = rstr + '-'
+            print(result)
+            rstr = rstr + result['win']
             rstr = rstr + '/' + result['color']
             if result['handicap'] > 0:
                 rstr = rstr + str(result['handicap'])
             else:
                 rstr = rstr + ' '
-            delta = self.gocra.rsys.getGain(result['color'], participant.startRating, opponent.startRating, result['handicap'], result['win'])
+            delta = self.gocra.rsys.getGain(result['color'], participant.startRating, opponent.startRating, result['handicap'], result['win'] == '+')
             participant.resultRating = participant.resultRating + delta
             while participant.resultRating > participant.newrank.round_rating() + 100:
                 participant.newrank.rankUp()
@@ -201,7 +211,7 @@ class Serie:
         rw = self.gocra.settings.s_ronde_column_width
         line1 = '+' + '+'.rjust(nw, '-')
         print(line1)
-        line1 = '| {0}'.format(self.name)
+        line1 = ('| {0}'.format(self.name)).ljust(nw) + '|' + ' {0:4d} {1:3d}'.format(self.year, self.snr)
         print(line1)
         line1 = '+' + '+'.rjust(nw, '-')
         for i in range(self.numberOfRounds):
@@ -274,18 +284,35 @@ class Participant:
 
     def setNr(self, nr):
         self.nr = nr
-
+'''
 class Rating:
     def __init__(self, date, rating):
         self.rating = {
                 "date": date,
                 "rating": rating
                 }
+'''
 
 class Ratinglist:
-    def __init__(self):
+    def __init__(self, gorca):
         self.participants = []
         self.series = []
+        file = gorca.settings.gorca_home + UGC.xml
+        if os.path.exists(file):
+            with open(file) as fd:
+                self.doc = xmltodict.parse(fd.read())
+            return True
+        else:
+            print('Ratingfile ' + file + ' bestaat niet. Aanmaken op basis van huidige serie?')
+            cmd = input('j/n : ')
+            if cmd == 'j':
+               self.initRatinglist()
+               return False
+            else:
+               return False
+
+    def initRatinlist:
+        pass
 
     def addSeries(self, name, start, end):
         self.series.append({
@@ -304,10 +331,10 @@ class Ratinglist:
 class Gocra:
     def __init__(self):
         self.settings = Settings()
-        self.rl = Ratinglist()
         self.messages = []
         self.serie = Serie(self)
         self.rsys = RatingSystem(self)
+        self.rl = Ratinglist(self)
 
     def readRParms(self):
         if self.rsys.rpimport(self.settings.gocra_home + 'gocra/ratingParameters.xml'):
@@ -316,7 +343,6 @@ class Gocra:
         else:
             return False
 
-
     def readSerie(self):
         if self.serie.timport(self.settings.s_home + self.settings.s_tfile):
             self.serie.treg()
@@ -324,8 +350,6 @@ class Gocra:
             return True
         else:
             return False
-
-
 
     def printMessages(self):
         for line in self.messages:
@@ -350,6 +374,7 @@ def main():
     if (
         gocra.readRParms()
         and gocra.readSerie()
+        and gocra.rl.initRatinglist()
     ):
         go_on = True
     else:
