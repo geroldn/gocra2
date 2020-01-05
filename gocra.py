@@ -111,7 +111,7 @@ class Serie:
     def treg(self):
         self.name = self.doc['Tournament']['Name']
         self.year = int(re.split('-', self.name)[1])
-        self.snr = int(re.split('-', self.name)[2])
+        self.nr = int(re.split('-', self.name)[2])
         self.numberOfRounds = int(self.doc['Tournament']['NumberOfRounds'])
         self.currentRoundNumber = int(self.doc['Tournament']['CurrentRoundNumber'])
         self.takeCurrentRoundInAccount = self.doc['Tournament']['TakeCurrentRoundInAccount']
@@ -192,10 +192,10 @@ class Serie:
                 rstr = rstr + ' '
             delta = self.gocra.rsys.getGain(result['color'], participant.startRating, opponent.startRating, result['handicap'], result['win'] == '+')
             participant.resultRating = participant.resultRating + delta
-            while participant.resultRating > participant.newrank.round_rating() + 100:
-                participant.newrank.rankUp()
-            while participant.resultRating < participant.newrank.round_rating() - 100:
-                participant.newrank.rankDown()
+            while participant.resultRating > participant.newRank.round_rating() + 100:
+                participant.newRank.rankUp()
+            while participant.resultRating < participant.newRank.round_rating() - 100:
+                participant.newRank.rankDown()
             rstr = rstr + '({0:+5.1f})'.format(delta)
         result['string'] = rstr
 
@@ -212,7 +212,7 @@ class Serie:
         rw = self.gocra.settings.s_ronde_column_width
         line1 = '+' + '+'.rjust(nw, '-')
         print(line1)
-        line1 = ('| {0}'.format(self.name)).ljust(nw) + '|' + ' {0:4d} {1:3d}'.format(self.year, self.snr)
+        line1 = ('| {0}'.format(self.name)).ljust(nw) + '|' + ' {0:4d} {1:3d}'.format(self.year, self.nr)
         print(line1)
         line1 = '+' + '+'.rjust(nw, '-')
         for i in range(self.numberOfRounds):
@@ -225,10 +225,10 @@ class Serie:
             for i in range(self.numberOfRounds - self.currentRoundNumber):
                 line2 = line2 + ' '.ljust(rw) + '|'
             line2 = line2 + ' {0:4.0f} -> {1:4.0f}'.format(p.startRating, p.resultRating)
-            if p.rank.nValue > p.newrank.nValue:
-                line2 = line2 + ' ' + p.newrank.rank + ' :('
-            if p.rank.nValue < p.newrank.nValue:
-                line2 = line2 + ' ' + p.newrank.rank + ' :)'
+            if p.rank.nValue > p.newRank.nValue:
+                line2 = line2 + ' ' + p.newRank.rank + ' :('
+            if p.rank.nValue < p.newRank.nValue:
+                line2 = line2 + ' ' + p.newRank.rank + ' :)'
             print(line2)
         print(line1)
 
@@ -276,7 +276,7 @@ class Participant:
     def __init__(self, name, rank, rating, _id):
         self.name = name
         self.rank = Rank(rank)
-        self.newrank = Rank(rank)
+        self.newRank = Rank(rank)
         self.rating = rating
         self.id = _id
         self.nr = 0
@@ -295,26 +295,56 @@ class Ratinglist:
     def initRatinglist(self):
         file = self.gocra.settings.gocra_home + 'UGC.xml'
         if os.path.exists(file):
-            with open(file) as fd:
-                self.doc = xmltodict.parse(fd.read())
-            print(self.doc)
+            self.readRatinglist(file)
         else:
             print('Ratingfile ' + file + ' bestaat niet. Aanmaken op basis van huidige serie?')
             cmd = input('j/n : ')
             if cmd == 'j':
-               self.firstRatinglist(self.gocra.serie)
+                self.firstRatinglist(self.gocra.serie, file)
+                self.writeRatinglist(file)
             else:
                pass
 
-    def firstRatinglist(self, serie):
+    def readRatinglist(self, file):
+        with open(file) as fd:
+            self.doc = xmltodict.parse(fd.read())
+        print(self.doc)
+
+    def writeRatinglist(self, file):
+        with open(file, 'w') as fd:
+            fd.write(xmltodict.unparse(self.doc, pretty=True))
+
+    def firstRatinglist(self, serie, file):
         self.doc = collections.OrderedDict()
         self.doc['Club'] = collections.OrderedDict()
         self.doc['Club']['Name'] = 'UGC'
         self.doc['Club']['Member'] = []
         for p in serie.participants:
-            self.doc['Club']['Member'].append(collections.OrderedDict([('Name',p.name), ('Id',p.id)]))
-        print(self.doc)
-
+            self.doc['Club']['Member'].append(collections.OrderedDict(
+                [
+                    ('Name', p.name),
+                    ('Id', p.id),
+                    ('Rank', p.newRank.rank),
+                    ('Rating', p.resultRating)
+                ]))
+        self.doc['Club']['Serie'] = []
+        self.doc['Club']['Serie'].append(collections.OrderedDict(
+            [
+                ('Year', serie.year),
+                ('Nr', serie.nr),
+                ('Result', [])
+            ]))
+        for p in serie.participants:
+            self.doc['Club']['Serie'][0]['Result'].append(collections.OrderedDict(
+                [
+                    ('Id', p.id),
+                    ('Rank', p.rank.rank),
+                    ('NewRank', p.newRank.rank),
+                    ('StartRating', p.startRating),
+                    ('ResultRating', p.resultRating)
+                ]))
+        self.writeRatinglist(file)
+        self.readRatinglist(file)
 
     def addSeries(self, name, start, end):
         self.series.append({
