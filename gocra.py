@@ -1,7 +1,7 @@
-#!/Applications/anaconda/anaconda3/bin/python
 
 import os
 import sys
+#!/Applications/anaconda/anaconda3/bin/python
 import collections
 import xmltodict
 from math import exp
@@ -286,6 +286,20 @@ class Participant:
     def setNr(self, nr):
         self.nr = nr
 
+class RlResult:
+    def set(self, pId, startRating, resultRating, rank, newRank):
+        self.pId = pId
+        self.startRating = startRating
+        self.resultRating = resultRating
+        self.rank = Rank(rank)
+        self.newRank = Rank(newRank)
+
+class RlSerie:
+    def __init__(self, jaar, nr, nMembers):
+        self.jaar = jaar
+        self.nr = nr
+        self.results = []
+
 class Ratinglist:
     def __init__(self, gocra):
         self.gocra = gocra
@@ -294,21 +308,50 @@ class Ratinglist:
 
     def initRatinglist(self):
         file = self.gocra.settings.gocra_home + 'UGC.xml'
-        if os.path.exists(file):
-            self.readRatinglist(file)
-        else:
-            print('Ratingfile ' + file + ' bestaat niet. Aanmaken op basis van huidige serie?')
+        if not os.path.exists(file):
+            print('Ratingfile ' + file + ' bestaat niet. Initiëren op basis van huidige serie?')
             cmd = input('j/n : ')
             if cmd == 'j':
                 self.firstRatinglist(self.gocra.serie, file)
                 self.writeRatinglist(file)
             else:
-               pass
+               return False
+        self.readRatinglist(file)
+        self.rlReg()
+        self.rlPrint()
+        return True
 
     def readRatinglist(self, file):
         with open(file) as fd:
             self.doc = xmltodict.parse(fd.read())
         print(self.doc)
+
+    def setNr(self):
+        for n, m in enumerate(self.members, start=1):
+            m.setNr(n)
+
+    def rlReg(self):
+        for m in self.doc['Club']['Member']:
+            cMember = (Participant(
+                  m['Name']
+                , m['Rank']
+                , int(m['Rating'])
+                , int(m['Id'])))
+            self.members.append(cMember)
+        self.setNr
+        for s in self.doc['Club']['Serie']:
+            if int(s['Year']) > 0:
+                print(s)
+                self.series.append(RlSerie(
+                        int(s['Year']),
+                        int(s['Nr']),
+                        len(self.members)
+                        ))
+                
+
+    def rlPrint(self):
+        pass
+
 
     def writeRatinglist(self, file):
         with open(file, 'w') as fd:
@@ -330,12 +373,18 @@ class Ratinglist:
         self.doc['Club']['Serie'] = []
         self.doc['Club']['Serie'].append(collections.OrderedDict(
             [
+                ('Year', 0),
+                ('Nr', 0),
+                ('Dummy', 'Maak Serie langer dan 1!')
+            ]))
+        self.doc['Club']['Serie'].append(collections.OrderedDict(
+            [
                 ('Year', serie.year),
                 ('Nr', serie.nr),
                 ('Result', [])
             ]))
         for p in serie.participants:
-            self.doc['Club']['Serie'][0]['Result'].append(collections.OrderedDict(
+            self.doc['Club']['Serie'][1]['Result'].append(collections.OrderedDict(
                 [
                     ('Id', p.id),
                     ('Rank', p.rank.rank),
@@ -345,20 +394,6 @@ class Ratinglist:
                 ]))
         self.writeRatinglist(file)
         self.readRatinglist(file)
-
-    def addSeries(self, name, start, end):
-        self.series.append({
-                "name": name,
-                "start": start,
-                "end": end
-                })
-
-    def addParticipant(self, name):
-        self.participants.append(Participant(name))
-
-    def print(self):
-        for p in self.participants:
-            p.print()
 
 class Gocra:
     def __init__(self):
@@ -389,12 +424,17 @@ class Gocra:
         self.messages[:] = []
 
 def dispatch(gocra):
-    print('\n <q>uit, <s>erie  .....')
+    print('\n <q>uit, <s>erie <r>atinglist,  .....')
     cmd = input('Enter command: ')
     if cmd == 'q':
         return False
     elif cmd == 's':
         if gocra.readSerie():
+            return True
+        else:
+            return False
+    elif cmd == 'r':
+        if gocra.rl.initRatinglist():
             return True
         else:
             return False
@@ -406,7 +446,6 @@ def main():
     if (
         gocra.readRParms()
         and gocra.readSerie()
-        and gocra.rl.initRatinglist()
     ):
         go_on = True
     else:
