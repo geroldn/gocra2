@@ -74,26 +74,23 @@ class RatingSystem:
 
     def getGain(self, color, rating, oppRating, handicap, bWin):
         e = self.epsilon
-        '''
-        if rating < oppRating:
-            r = rating
-        else:
-            r = oppRating
-        '''
-        r = rating
-        c = self.getParms(r)['Con']
-        a = self.getParms(r)['A']
-        hr = 0.0
         if handicap > 0:
             if color == 'B':
-                hr = 100*(handicap - 0.5)
+                rating = rating + 100*(handicap - 0.5)
             elif color == 'W':
-                hr = 100*(0.5 - handicap)
+                oppRating = oppRating + 100*(handicap - 0.5)
             else:
                 print('Illegal color')
                 return None
-        diff = oppRating - rating - hr
-        return c*(bWin - 1 / (exp(diff/a) + 1) - e/2)
+        if rating < oppRating:
+            a = self.getParms(rating)['A']
+        else:
+            a = self.getParms(oppRating)['A']
+        c = self.getParms(rating)['Con']
+        diff = oppRating - rating
+        se = 1 / (exp(diff/a) + 1)
+        print('rating: {0:4.0f}, oppRating: {4:4.0f}, con: {1:7.3f}, a: {2:7.3f}, se: {3:6.3f}'.format(rating, c, a, se, oppRating))
+        return c*(bWin - se - e/2)
 
 class Serie:
     def __init__(self, gocra):
