@@ -1,7 +1,7 @@
+#!/Applications/anaconda/anaconda3/bin/python
 
 import os
 import sys
-#!/Applications/anaconda/anaconda3/bin/python
 import collections
 import xmltodict
 from math import exp
@@ -149,7 +149,14 @@ class Serie:
         for tr in self.doc['Tournament']['TournamentRound']:
             if int(tr['RoundNumber']) == nRound + 1 :
                 break
-        for tp in tr['Pairing']:
+        if not 'Pairing' in tr.keys():
+            print('No Pairing')
+            return
+        if not type(tr['Pairing']) is list:
+            trlist = [tr['Pairing']]
+        else:
+            trlist = tr['Pairing']
+        for tp in trlist:
             if tp['PairingWithBye'] == 'true':
                 pass
             elif int(tp['Black']) == participant.id:
@@ -183,7 +190,6 @@ class Serie:
             result['handicap'] = int(tp['Handicap'])
             #rstr = ' ' + str(result['opponent_nr'])
             rstr = '{0:3d}'.format( result['opponent_nr'])
-            print(result)
             rstr = rstr + result['win']
             rstr = rstr + '/' + result['color']
             if result['handicap'] > 0:
