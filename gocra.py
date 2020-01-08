@@ -1,5 +1,4 @@
 #!/Applications/anaconda/anaconda3/bin/python
-
 import os
 import sys
 import collections
@@ -105,6 +104,9 @@ class Serie:
             self.gocra.messages.append('No such file: ' + file)
             return False
 
+    def compareRating(self, p):
+        return p.resultRating
+
     def treg(self):
         self.name = self.doc['Tournament']['Name']
         self.year = int(re.split('-', self.name)[1])
@@ -124,18 +126,28 @@ class Serie:
                     , int(p['Id'])))
                 self.participants.append(sParticipant)
         self.setNr()
-        self.calcResultRatings()
+        self.resetResultRatings()
+        for n, p in enumerate(self.participants):
+            self.results.append([])
+            for r in range(self.currentRoundNumber):
+                self.results[n].append({})
+                self.regResult(n, r)
+        self.participants.sort(reverse=True, key=self.compareRating)
+        self.results = []
+        self.setNr()
+        self.resetResultRatings()
         for n, p in enumerate(self.participants):
             self.results.append([])
             for r in range(self.currentRoundNumber):
                 self.results[n].append({})
                 self.regResult(n, r)
 
+
     def setNr(self):
         for n, p in enumerate(self.participants, start=1):
             p.setNr(n)
 
-    def calcResultRatings(self):
+    def resetResultRatings(self):
         for p in self.participants:
             p.resultRating = p.startRating
 
@@ -209,6 +221,62 @@ class Serie:
                 nr = p.nr
                 break
         return nr
+
+    def participantHtml(self, fd, n, p):
+        fd.write('    <tr>\n')
+        fd.write('      <td>\n')
+        fd.write(str(p.nr) + ' ' + p.name + ' ('+ p.rank.rank + ')')
+        fd.write('      </td>\n')
+        for i in range(self.currentRoundNumber):
+            fd.write('      <td>')
+            fd.write(self.results[n][i]['string'])
+            fd.write('</td>\n')
+        for i in range(self.numberOfRounds - self.currentRoundNumber):
+            fd.write('      <td></td>')
+        fd.write('      <td>')
+        fd.write( '{0:4.0f} -> {1:4.0f}'.format(p.startRating, p.resultRating))
+        if p.rank.nValue > p.newRank.nValue:
+            fd.write(' ' + p.newRank.rank + ' :(')
+        if p.rank.nValue < p.newRank.nValue:
+            fd.write(' ' + p.newRank.rank + ' :)')
+        fd.write('</td>\n')
+        fd.write('    </tr>\n')
+
+    def serieHtml(self, fd):
+        fd.write('  <table>\n')
+        fd.write('    <tr>\n')
+        fd.write('      <td>\n')
+        fd.write('        ' + self.name)
+        fd.write('      </td>\n')
+        for i in range(self.numberOfRounds):
+            fd.write('      <td>')
+            fd.write('Ronde ' + str(i+1))
+            fd.write('      </td>\n')
+        fd.write('      <td>Rating</td>\n')
+        fd.write('    </tr>\n')
+        for n, p in enumerate(self.participants):
+            self.participantHtml(fd, n, p)
+        fd.write('  </table>\n')
+
+    def createHtml(self):
+        file = self.gocra.settings.gocra_home + 'UGC-stand.html'
+        with open(file, 'w') as fd:
+            fd.write('<!DOCTYPE html>\n')
+            fd.write('<html>\n')
+            fd.write('<head>\n')
+            fd.write('<style>\n')
+            fd.write('table{\n')
+            fd.write('  border-collapse: collapse;\n')
+            fd.write('}\n')
+            fd.write('table, th, td {\n')
+            fd.write('  border: 1px solid black;\n')
+            fd.write('}\n')
+            fd.write('</style>\n')
+            fd.write('</head>\n')
+            fd.write('<body>\n')
+            self.serieHtml(fd)
+            fd.write('</body>\n')
+            fd.write('</html>\n')
 
     def print(self):
         nw = self.gocra.settings.s_name_column_width
@@ -350,11 +418,9 @@ class Ratinglist:
                         int(s['Nr']),
                         len(self.members)
                         ))
-                
 
     def rlPrint(self):
         pass
-
 
     def writeRatinglist(self, file):
         with open(file, 'w') as fd:
@@ -430,6 +496,7 @@ def dispatch(gocra):
     print('\n <q>uit, <s>erie <r>atinglist,  .....')
     cmd = input('Enter command: ')
     if cmd == 'q':
+        gocra.serie.createHtml()
         return False
     elif cmd == 's':
         if gocra.readSerie():
