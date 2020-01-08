@@ -243,7 +243,6 @@ class Serie:
         fd.write('    </tr>\n')
 
     def serieHtml(self, fd):
-        fd.write('  <div class=center>\n')
         fd.write('  <h2>Stand lopende serie</h2>\n')
         fd.write('  <table>\n')
         fd.write('    <tr>\n')
@@ -259,7 +258,6 @@ class Serie:
         for n, p in enumerate(self.participants):
             self.participantHtml(fd, n, p)
         fd.write('  </table>\n')
-        fd.write('  </div>\n')
 
     def createHtml(self):
         file = self.gocra.settings.gocra_home + 'UGC-stand.html'
@@ -270,9 +268,6 @@ class Serie:
             fd.write('<style>\n')
             fd.write('table{\n')
             fd.write('  border-collapse: collapse;\n')
-            fd.write('  margin: auto;\n')
-            fd.write('}\n')
-            fd.write('.center{\n')
             fd.write('  margin: auto;\n')
             fd.write('}\n')
             fd.write('table, th, td {\n')
