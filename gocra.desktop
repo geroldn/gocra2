@@ -1,0 +1,11 @@
+#!/usr/bin/env xdg-open
+
+[Desktop Entry]
+Version=1.0
+Type=Application
+Terminal=true
+Exec=/usr/bin/python3 /home/goclubutrecht/gocra/gocra/gocra.py
+Name=Gocra
+Comment=Gocra
+Icon=/home/goclubutrecht/gocra/gocra/icons/gocra.png
+Name[en_US]=gocra
