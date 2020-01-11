@@ -1,10 +1,14 @@
 #!/Applications/anaconda/anaconda3/bin/python
 import os
 import sys
+import shutil
 import collections
 import xmltodict
 from math import exp
 import re
+import pysftp
+from getpass import getpass
+from datetime import date
 
 class Settings:
     def __init__(self):
@@ -27,6 +31,26 @@ class Settings:
         self.s_name_column_width = int(self.doc['Settings']['s_name_column_width'])
         self.s_ronde_column_width = int(self.doc['Settings']['s_ronde_column_width'])
 
+
+class Uploader:
+    host = 'sftp.xs4all.nl'
+    user = 'genic'
+    passwd = None
+    askPw = True
+    def upload(_dir, _file):
+        if Uploader.askPw and Uploader.passwd == None:
+            print('password for ' + Uploader.user + ' on ' + Uploader.host)
+            Uploader.passwd = getpass()
+            try:
+                with pysftp.Connection(Uploader.host,
+                    username=Uploader.user,
+                    password=Uploader.passwd,
+                    log=True) as sftp:
+                    print('log: ' + sftp.logfile)
+                    with sftp.cd(_dir):
+                        sftp.put(_file)
+            except (a, b) as why:
+                print('Fout bij upload '+ str(why))
 
 class RatingSystem:
     def __init__(self, gocra):
@@ -481,6 +505,20 @@ class Gocra:
         self.rsys = RatingSystem(self)
         self.rl = Ratinglist(self)
 
+    def cpMmToday(self):
+        today = date.today()
+        s_today = today.strftime("%Y%m%d")
+        fromPath = self.settings.s_home + self.settings.s_tfile
+        fBase = re.split('\.', self.settings.s_tfile)[0]
+        fExtension = re.split('\.', self.settings.s_tfile)[1]
+        toPath = self.settings.s_home + fBase + '_' + s_today + '.' + fExtension
+        try:
+            shutil.copy(fromPath, toPath)
+            return toPath
+        except (IOError, os.error) as why:
+            print('Fout by backup MM: '+ str(why))
+            return None
+
     def readRParms(self):
         if self.rsys.rpimport(self.settings.gocra_home + 'gocra/ratingParameters.xml'):
             self.rsys.rpreg(self)
@@ -502,8 +540,13 @@ class Gocra:
         self.messages[:] = []
 
 def dispatch(gocra):
-    print('\n <q>uit, <s>erie <r>atinglist,  .....')
+    print('\n <q>uit, <s>erie, <r>atinglist, <u>pload to web  .....')
     cmd = input('Enter command: ')
+    if cmd == 'u':
+        cpMm = gocra.cpMmToday()
+        if cpMm:
+            Uploader.upload('WWW/UGC/archief', cpMm)
+            Uploader.upload('WWW/UGC', 'UGC-stand.html')
     if cmd == 'q':
         gocra.serie.createHtml()
         return False
