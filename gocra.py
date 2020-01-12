@@ -12,9 +12,15 @@ from datetime import date
 
 class Settings:
     def __init__(self):
+        self.ok = False
         self.gocra_home = os.path.dirname(os.path.realpath(sys.argv[0])) + '/../'
         if self.s_import(self.gocra_home + 'gocrarc.xml'):
             self.reg()
+        else:
+            print('Iets gaat fout bij inlezen sittings (gocrarc.xml)')
+            print('<Enter> om gocra af te sluiten')
+            input()
+            quit()
 
     def s_import(self, file):
         if os.path.exists(file):
@@ -22,35 +28,47 @@ class Settings:
                 self.doc = xmltodict.parse(fd.read())
             return True
         else:
-            self.gocra.messages.append('No such file: ' + file)
+            print('No such file: ' + file)
             return False
 
     def reg(self):
-        self.s_home = self.doc['Settings']['s_home']
-        self.s_tfile = self.doc['Settings']['s_tfile']
+        self.ok = True
+        self.s_home = self.doc['Settings']['serie_home']
+        self.s_tfile = self.doc['Settings']['serie_file']
         self.s_name_column_width = int(self.doc['Settings']['s_name_column_width'])
         self.s_ronde_column_width = int(self.doc['Settings']['s_ronde_column_width'])
-
+        self.sftp_host = self.doc['Settings']['sftp_host']
+        self.sftp_user = self.doc['Settings']['sftp_user']
+        self.sftp_sshkey = self.doc['Settings']['sftp_sshkey']
+        print(self.sftp_sshkey)
+        self.sftp_askPw = (self.doc['Settings']['sftp_askPw'] == True)
+        print(self.sftp_askPw)
 
 class Uploader:
-    host = 'sftp.xs4all.nl'
-    user = 'genic'
-    passwd = None
-    askPw = True
+    def regSettings(s):
+        Uploader.host = s.sftp_host
+        Uploader.user = s.sftp_user
+        Uploader.passwd = None
+        Uploader.sshkey = s.sftp_sshkey
+        Uploader.askPw = s.sftp_askPw
+
     def upload(_dir, _file):
         if Uploader.askPw and Uploader.passwd == None:
             print('password for ' + Uploader.user + ' on ' + Uploader.host)
             Uploader.passwd = getpass()
-            try:
-                with pysftp.Connection(Uploader.host,
-                    username=Uploader.user,
-                    password=Uploader.passwd,
-                    log=True) as sftp:
-                    print('log: ' + sftp.logfile)
-                    with sftp.cd(_dir):
-                        sftp.put(_file)
-            except (a, b) as why:
-                print('Fout bij upload '+ str(why))
+        try:
+            with pysftp.Connection(Uploader.host,
+                username=Uploader.user,
+                password=Uploader.passwd,
+                private_key = Uploader.sshkey,
+                log=True) as sftp:
+                print('log: ' + sftp.logfile)
+                with sftp.cd(_dir):
+                    sftp.put(_file)
+        except:
+            print('Fout bij upload ')
+            print("Unexpected error:", sys.exc_info()[0])
+            raise
 
 class RatingSystem:
     def __init__(self, gocra):
@@ -112,7 +130,7 @@ class RatingSystem:
         c = self.getParms(rating)['Con']
         diff = oppRating - rating
         se = 1 / (exp(diff/a) + 1)
-        print('rating: {0:4.0f}, oppRating: {4:4.0f}, con: {1:7.3f}, a: {2:7.3f}, se: {3:6.3f}'.format(rating, c, a, se, oppRating))
+        #print('rating: {0:4.0f}, oppRating: {4:4.0f}, con: {1:7.3f}, a: {2:7.3f}, se: {3:6.3f}'.format(rating, c, a, se, oppRating))
         return c*(bWin - se - e/2)
 
 class Serie:
@@ -125,7 +143,7 @@ class Serie:
                 self.doc = xmltodict.parse(fd.read())
             return True
         else:
-            self.gocra.messages.append('No such file: ' + file)
+            print('No such file: ' + file)
             return False
 
     def compareRating(self, p):
@@ -504,6 +522,7 @@ class Gocra:
         self.serie = Serie(self)
         self.rsys = RatingSystem(self)
         self.rl = Ratinglist(self)
+        Uploader.regSettings(self.settings)
 
     def cpMmToday(self):
         today = date.today()
@@ -543,35 +562,29 @@ def dispatch(gocra):
     print('\n <q>uit, <s>erie, <r>atinglist, <u>pload to web  .....')
     cmd = input('Enter command: ')
     if cmd == 'u':
+        gocra.serie.createHtml()
         cpMm = gocra.cpMmToday()
         if cpMm:
             Uploader.upload('WWW/UGC/archief', cpMm)
             Uploader.upload('WWW/UGC', 'UGC-stand.html')
     if cmd == 'q':
-        gocra.serie.createHtml()
         return False
     elif cmd == 's':
-        if gocra.readSerie():
-            return True
-        else:
-            return False
+        if not gocra.readSerie():
+            print('Iets gaat fout bij lezen serie data')
     elif cmd == 'r':
-        if gocra.rl.initRatinglist():
-            return True
-        else:
-            return False
-    else:
-        return True
+        if not gocra.rl.initRatinglist():
+            print('Iets gaat fout bij lezen rating data')
+    return True
 
 def main():
+    go_on = True
     gocra = Gocra()
-    if (
+    if not (
         gocra.readRParms()
         and gocra.readSerie()
-    ):
-        go_on = True
-    else:
-        go_on = False
+        ):
+        print('Iets gaat fout met inlezen params of serie data')
     while go_on :
         go_on = dispatch(gocra)
     if len(gocra.messages) > 0:
