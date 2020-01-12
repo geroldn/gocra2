@@ -40,9 +40,7 @@ class Settings:
         self.sftp_host = self.doc['Settings']['sftp_host']
         self.sftp_user = self.doc['Settings']['sftp_user']
         self.sftp_sshkey = self.doc['Settings']['sftp_sshkey']
-        print(self.sftp_sshkey)
         self.sftp_askPw = (self.doc['Settings']['sftp_askPw'] == True)
-        print(self.sftp_askPw)
 
 class Uploader:
     def regSettings(s):
