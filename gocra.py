@@ -326,6 +326,7 @@ class Serie:
             self.serieHtml(fd)
             fd.write('</body>\n')
             fd.write('</html>\n')
+        return file
 
     def print(self):
         nw = self.gocra.settings.s_name_column_width
@@ -560,11 +561,11 @@ def dispatch(gocra):
     print('\n <q>uit, <s>erie, <r>atinglist, <u>pload to web  .....')
     cmd = input('Enter command: ')
     if cmd == 'u':
-        gocra.serie.createHtml()
+        html = gocra.serie.createHtml()
         cpMm = gocra.cpMmToday()
         if cpMm:
             Uploader.upload('WWW/UGC/archief', cpMm)
-            Uploader.upload('WWW/UGC', 'UGC-stand.html')
+            Uploader.upload('WWW/UGC', html)
     if cmd == 'q':
         return False
     elif cmd == 's':
