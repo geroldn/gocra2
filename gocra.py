@@ -41,9 +41,7 @@ class Settings:
         self.sftp_dir = self.doc['Settings']['sftp_dir']
         self.sftp_user = self.doc['Settings']['sftp_user']
         self.sftp_sshkey = self.doc['Settings']['sftp_sshkey']
-        print(self.sftp_sshkey)
         self.sftp_askPw = (self.doc['Settings']['sftp_askPw'] == True)
-        print(self.sftp_askPw)
 
 class Uploader:
     def regSettings(s):
@@ -333,6 +331,7 @@ class Serie:
             self.serieHtml(fd)
             fd.write('</body>\n')
             fd.write('</html>\n')
+        return file
 
     def print(self):
         nw = self.gocra.settings.s_name_column_width
@@ -568,7 +567,7 @@ def dispatch(gocra):
     cmd = input('Enter command: ')
     print()
     if cmd == 'u':
-        gocra.serie.createHtml()
+        html = gocra.serie.createHtml()
         cpMm = gocra.cpMmToday()
         if cpMm:
             Uploader.upload('archief', cpMm)
