@@ -38,6 +38,7 @@ class Settings:
         self.s_name_column_width = int(self.doc['Settings']['s_name_column_width'])
         self.s_ronde_column_width = int(self.doc['Settings']['s_ronde_column_width'])
         self.sftp_host = self.doc['Settings']['sftp_host']
+        self.sftp_dir = self.doc['Settings']['sftp_dir']
         self.sftp_user = self.doc['Settings']['sftp_user']
         self.sftp_sshkey = self.doc['Settings']['sftp_sshkey']
         print(self.sftp_sshkey)
@@ -47,12 +48,14 @@ class Settings:
 class Uploader:
     def regSettings(s):
         Uploader.host = s.sftp_host
+        Uploader.dir = s.sftp_dir
         Uploader.user = s.sftp_user
         Uploader.passwd = None
         Uploader.sshkey = s.sftp_sshkey
         Uploader.askPw = s.sftp_askPw
 
-    def upload(_dir, _file):
+    def upload(subdir, _file):
+        #print('KEY: ' + Uploader.sshkey)
         if Uploader.askPw and Uploader.passwd == None:
             print('password for ' + Uploader.user + ' on ' + Uploader.host)
             Uploader.passwd = getpass()
@@ -61,10 +64,12 @@ class Uploader:
                 username=Uploader.user,
                 password=Uploader.passwd,
                 private_key = Uploader.sshkey,
+                port = 2022,
                 log=True) as sftp:
-                print('log: ' + sftp.logfile)
-                with sftp.cd(_dir):
+                #print('log: ' + sftp.logfile)
+                with sftp.cd(Uploader.dir + subdir):
                     sftp.put(_file)
+                print('Uploaded {0} to [webloc]/{1}.'.format(_file, subdir))
         except:
             print('Fout bij upload ')
             print("Unexpected error:", sys.exc_info()[0])
@@ -561,12 +566,13 @@ class Gocra:
 def dispatch(gocra):
     print('\n <q>uit, <s>erie, <r>atinglist, <u>pload to web  .....')
     cmd = input('Enter command: ')
+    print()
     if cmd == 'u':
         gocra.serie.createHtml()
         cpMm = gocra.cpMmToday()
         if cpMm:
-            Uploader.upload('WWW/UGC/archief', cpMm)
-            Uploader.upload('WWW/UGC', 'UGC-stand.html')
+            Uploader.upload('archief', cpMm)
+            Uploader.upload('', 'UGC-stand.html')
     if cmd == 'q':
         return False
     elif cmd == 's':
