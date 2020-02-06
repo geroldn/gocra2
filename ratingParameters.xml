@@ -3,6 +3,11 @@
   <Epsilon>0.016</Epsilon>
   <Conlist>
     <Conitem>
+      <Gor>-2000</Gor>
+      <Con>116</Con>
+      <A>200</A>
+    </Conitem>
+    <Conitem>
       <Gor>100</Gor>
       <Con>116</Con>
       <A>200</A>

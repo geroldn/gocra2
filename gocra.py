@@ -58,20 +58,26 @@ class Uploader:
             print('password for ' + Uploader.user + ' on ' + Uploader.host)
             Uploader.passwd = getpass()
         try:
-            with pysftp.Connection(Uploader.host,
+            sftp = pysftp.Connection(Uploader.host,
                 username=Uploader.user,
                 password=Uploader.passwd,
                 private_key = Uploader.sshkey,
                 port = 2022,
-                log=True) as sftp:
-                #print('log: ' + sftp.logfile)
-                with sftp.cd(Uploader.dir + subdir):
-                    sftp.put(_file)
-                print('Uploaded {0} to [webloc]/{1}.'.format(_file, subdir))
+                log=True)
         except:
-            print('Fout bij upload ')
+            print('Fout bij openen sftp-connectie ')
             print("Unexpected error:", sys.exc_info()[0])
-            raise
+        else:
+            #print('log: ' + sftp.logfile)
+            with sftp:
+                with sftp.cd(Uploader.dir + subdir):
+                    try:
+                        sftp.put(_file)
+                    except:
+                        print('Fout bij upload {0}'.format(_file))
+                        print("Unexpected error:", sys.exc_info()[0])
+                    else:
+                        print('Uploaded {0} to [webloc]/{1}.'.format(_file, subdir))
 
 class RatingSystem:
     def __init__(self, gocra):
@@ -306,6 +312,7 @@ class Serie:
 
     def createHtml(self):
         file = self.gocra.settings.gocra_home + 'UGC-stand.html'
+        print(file)
         with open(file, 'w') as fd:
             fd.write('<!DOCTYPE html>\n')
             fd.write('<html>\n')
@@ -331,6 +338,7 @@ class Serie:
             self.serieHtml(fd)
             fd.write('</body>\n')
             fd.write('</html>\n')
+        print(file)
         return file
 
     def print(self):
@@ -571,7 +579,7 @@ def dispatch(gocra):
         cpMm = gocra.cpMmToday()
         if cpMm:
             Uploader.upload('archief', cpMm)
-            Uploader.upload('', 'UGC-stand.html')
+            Uploader.upload('', html)
     if cmd == 'q':
         return False
     elif cmd == 's':
