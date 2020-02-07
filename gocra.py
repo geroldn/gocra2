@@ -312,7 +312,6 @@ class Serie:
 
     def createHtml(self):
         file = self.gocra.settings.gocra_home + 'UGC-stand.html'
-        print(file)
         with open(file, 'w') as fd:
             fd.write('<!DOCTYPE html>\n')
             fd.write('<html>\n')
@@ -338,7 +337,6 @@ class Serie:
             self.serieHtml(fd)
             fd.write('</body>\n')
             fd.write('</html>\n')
-        print(file)
         return file
 
     def print(self):
