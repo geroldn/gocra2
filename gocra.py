@@ -155,8 +155,9 @@ class Serie:
             print('No such file: ' + file)
             return False
 
-    def compareRating(self, p):
-        return p.resultRating
+    def comparePosition(self, p):
+        tdelta = p.resultRating - p.startRating
+        return 100 * p.wins + tdelta
 
     def treg(self):
         self.name = self.doc['Tournament']['Name']
@@ -164,6 +165,7 @@ class Serie:
         self.nr = int(re.split('-', self.name)[2])
         self.numberOfRounds = int(self.doc['Tournament']['NumberOfRounds'])
         self.currentRoundNumber = int(self.doc['Tournament']['CurrentRoundNumber'])
+        #self.currentRoundNumber = 3
         self.takeCurrentRoundInAccount = self.doc['Tournament']['TakeCurrentRoundInAccount']
         self.participants = []
         self.results = []
@@ -177,30 +179,38 @@ class Serie:
                     , int(p['Id'])))
                 self.participants.append(sParticipant)
         self.setNr()
-        self.resetResultRatings()
+        self.reset()
         for n, p in enumerate(self.participants):
             self.results.append([])
             for r in range(self.currentRoundNumber):
                 self.results[n].append({})
                 self.regResult(n, r)
-        self.participants.sort(reverse=True, key=self.compareRating)
+        for p in self.participants:
+            if p.resultRating < p.startRating - 100:
+                p.resultRating = p.startRating - 100
+        self.participants.sort(reverse=True, key=self.comparePosition)
         self.results = []
         self.setNr()
-        self.resetResultRatings()
+        self.reset()
         for n, p in enumerate(self.participants):
             self.results.append([])
             for r in range(self.currentRoundNumber):
                 self.results[n].append({})
                 self.regResult(n, r)
+        for p in self.participants:
+            if p.resultRating < p.startRating - 100:
+                p.resultRating = p.startRating - 100
 
 
     def setNr(self):
         for n, p in enumerate(self.participants, start=1):
             p.setNr(n)
 
-    def resetResultRatings(self):
+    def reset(self):
         for p in self.participants:
             p.resultRating = p.startRating
+            p.wins = 0
+            p.games = 0
 
     def regResult(self, nParticipant, nRound):
         participant = self.participants[nParticipant]
@@ -218,7 +228,11 @@ class Serie:
             trlist = tr['Pairing']
         for tp in trlist:
             if tp['PairingWithBye'] == 'true':
-                pass
+                if int(tp['Black']) == participant.id:
+                    result['color'] = 'B'
+                    result['win'] = 'free'
+                    print(result)
+                    break
             elif int(tp['Black']) == participant.id:
                 result['color'] = 'B'
                 result['opponent_nr'] = self.getPNr(int(tp['White']))
@@ -239,16 +253,18 @@ class Serie:
                 else:
                     result['win'] = '='
                 break
-        if tp['PairingWithBye'] == 'true':
-            rstr  = '   ='
-        elif result['color'] == None:
+        delta = 0.0
+        if result['color'] == None:
             rstr  = '   -'
+        elif result['win'] == 'free':
+            rstr  = '   vrij'
+            participant.wins = participant.wins + 1
+            participant.games = participant.games + 1
         elif result['win'] == '=':
             rstr  = '   ='
         else:
             opponent = self.participants[result['opponent_nr']-1]
             result['handicap'] = int(tp['Handicap'])
-            #rstr = ' ' + str(result['opponent_nr'])
             rstr = '{0:3d}'.format( result['opponent_nr'])
             rstr = rstr + result['win']
             rstr = rstr + '/' + result['color']
@@ -256,14 +272,21 @@ class Serie:
                 rstr = rstr + str(result['handicap'])
             else:
                 rstr = rstr + ' '
-            delta = self.gocra.rsys.getGain(result['color'], participant.startRating, opponent.startRating, result['handicap'], result['win'] == '+')
+            delta = self.gocra.rsys.getGain(result['color']
+                        , participant.startRating
+                        , opponent.startRating
+                        , result['handicap']
+                        , result['win'] == '+')
             participant.resultRating = participant.resultRating + delta
             while participant.resultRating > participant.newRank.round_rating() + 100:
                 participant.newRank.rankUp()
             while participant.resultRating < participant.newRank.round_rating() - 100:
                 participant.newRank.rankDown()
-            rstr = rstr + '({0:+5.1f})'.format(delta)
+            participant.games = participant.games + 1
+            if result['win'] == '+':
+                participant.wins = participant.wins + 1
         result['string'] = rstr
+        result['delta'] = delta
 
     def getPNr(self, _id):
         nr = 0
@@ -279,17 +302,53 @@ class Serie:
         fd.write(str(p.nr) + ' ' + p.name + ' ('+ p.rank.rank + ')')
         fd.write('      </td>\n')
         for i in range(self.currentRoundNumber):
-            fd.write('      <td>')
+            delta = self.results[n][i]['delta']
+            if delta > 0.0:
+                fd.write('      <td class="green">')
+            elif delta < 0.0:
+                fd.write('      <td class="red">')
+            else:
+                fd.write('      <td class="black">')
             fd.write(self.results[n][i]['string'])
+            fd.write('</td>\n')
+            if delta > 0.0:
+                fd.write('      <td class="black">')
+                fd.write('{0:+5.1f}'.format(self.results[n][i]['delta']))
+            elif delta < 0.0:
+                fd.write('      <td class="black">')
+                fd.write('{0:+5.1f}'.format(self.results[n][i]['delta']))
+            else:
+                fd.write('      <td>')
             fd.write('</td>\n')
         for i in range(self.numberOfRounds - self.currentRoundNumber):
             fd.write('      <td></td>')
-        fd.write('      <td>')
-        fd.write( '{0:4.0f} -> {1:4.0f}'.format(p.startRating, p.resultRating))
+            fd.write('      <td></td>')
+        fd.write('      <td class="black">')
+        fd.write( '{0}/{1}'.format(p.wins, p.games))
+        fd.write('</td>\n')
+        fd.write('      <td class="black">')
+        fd.write( '{0:4.0f}'.format(p.startRating))
+        fd.write('</td>\n')
+        tdelta = p.resultRating - p.startRating
+        if tdelta > 0:
+            fd.write('      <td class="green">')
+        elif tdelta < 0:
+            fd.write('      <td class="red">')
+        else:
+            fd.write('      <td class="black">')
+        fd.write( '{0:4.0f}'.format(tdelta))
+        fd.write('</td>\n')
+        fd.write('      <td class="black">')
+        fd.write( '{0:4.0f}'.format(p.resultRating))
+        fd.write('</td>\n')
         if p.rank.nValue > p.newRank.nValue:
+            fd.write('      <td class="red">')
             fd.write(' ' + p.newRank.rank + ' :(')
-        if p.rank.nValue < p.newRank.nValue:
+        elif p.rank.nValue < p.newRank.nValue:
+            fd.write('      <td class="green">')
             fd.write(' ' + p.newRank.rank + ' :)')
+        else:
+            fd.write('      <td>')
         fd.write('</td>\n')
         fd.write('    </tr>\n')
 
@@ -301,10 +360,28 @@ class Serie:
         fd.write('        ' + self.name)
         fd.write('      </th>\n')
         for i in range(self.numberOfRounds):
-            fd.write('      <th>')
+            fd.write('      <th colspan="2">')
             fd.write('Ronde ' + str(i+1))
             fd.write('      </th>\n')
-        fd.write('      <th>Rating</th>\n')
+        fd.write('      <th ></th>\n')
+        fd.write('      <th colspan="3">Rating</th>\n')
+        fd.write('      <th ></th>\n')
+        fd.write('    </tr>\n')
+        fd.write('    <tr>\n')
+        fd.write('      <th>\n')
+        fd.write('      </th>\n')
+        for i in range(self.numberOfRounds):
+            fd.write('      <th>')
+            fd.write('Res')
+            fd.write('      </th>\n')
+            fd.write('      <th>')
+            fd.write('+/-')
+            fd.write('      </th>\n')
+        fd.write('      <th>Score</th>\n')
+        fd.write('      <th >Start</th>\n')
+        fd.write('      <th >+/-</th>\n')
+        fd.write('      <th >Actueel</th>\n')
+        fd.write('      <th >Pro/Deg</th>\n')
         fd.write('    </tr>\n')
         for n, p in enumerate(self.participants):
             self.participantHtml(fd, n, p)
@@ -317,12 +394,34 @@ class Serie:
             fd.write('<html>\n')
             fd.write('<head>\n')
             fd.write('<style>\n')
+            fd.write('.black{\n')
+            fd.write('  color: black;\n')
+            fd.write('  text-align: center;\n')
+            fd.write('}\n')
+            fd.write('.blue{\n')
+            fd.write('  color: blue;\n')
+            fd.write('  text-align: center;\n')
+            fd.write('}\n')
+            fd.write('.green{\n')
+            fd.write('  color: green;\n')
+            fd.write('  text-align: center;\n')
+            fd.write('}\n')
+            fd.write('.red{\n')
+            fd.write('  color: red;\n')
+            fd.write('  text-align: center;\n')
+            fd.write('}\n')
             fd.write('table{\n')
             fd.write('  border-collapse: collapse;\n')
             fd.write('  margin: auto;\n')
             fd.write('}\n')
             fd.write('table, th, td {\n')
             fd.write('  border: 1px solid black;\n')
+            fd.write('}\n')
+            fd.write('tr:nth-child(even){\n')
+            fd.write('  background: #DDD;\n')
+            fd.write('}\n')
+            fd.write('tr:nth-child(od){\n')
+            fd.write('  background: #FFF;\n')
             fd.write('}\n')
             fd.write('h2 {\n')
             fd.write('  text-align: center;\n')
@@ -572,11 +671,14 @@ def dispatch(gocra):
     print('\n <q>uit, <s>erie, <r>atinglist, <u>pload to web  .....')
     cmd = input('Enter command: ')
     print()
+    if cmd == 'h':
+        html = gocra.serie.createHtml()
     if cmd == 'u':
         html = gocra.serie.createHtml()
         cpMm = gocra.cpMmToday()
         if cpMm:
             Uploader.upload('archief', cpMm)
+        if html:
             Uploader.upload('', html)
     if cmd == 'q':
         return False
