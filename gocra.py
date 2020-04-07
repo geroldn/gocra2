@@ -200,6 +200,11 @@ class Serie:
         for p in self.participants:
             if p.resultRating < p.startRating - 100:
                 p.resultRating = p.startRating - 100
+        for p in self.participants:
+            while p.resultRating > p.newRank.round_rating() + 100:
+                p.newRank.rankUp()
+            while p.resultRating < p.newRank.round_rating() - 100:
+                p.newRank.rankDown()
 
 
     def setNr(self):
@@ -278,10 +283,12 @@ class Serie:
                         , result['handicap']
                         , result['win'] == '+')
             participant.resultRating = participant.resultRating + delta
+            """
             while participant.resultRating > participant.newRank.round_rating() + 100:
                 participant.newRank.rankUp()
             while participant.resultRating < participant.newRank.round_rating() - 100:
                 participant.newRank.rankDown()
+            """
             participant.games = participant.games + 1
             if result['win'] == '+':
                 participant.wins = participant.wins + 1
