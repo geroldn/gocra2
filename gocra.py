@@ -473,7 +473,7 @@ class Serie:
 class Rank:
     def __init__(self, rank):
         self.rank = rank
-        self.type = re.split("[1-9]+", rank)[1]
+        self.type = re.split("[0-9]+", rank)[1]
         if self.type == 'd':
             self.nValue = int(re.split("d", rank)[0])
         if self.type == 'k':
