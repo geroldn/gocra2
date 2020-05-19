@@ -138,9 +138,10 @@ class RatingSystem:
             a = self.getParms(oppRating)['A']
         c = self.getParms(rating)['Con']
         diff = oppRating - rating
-        se = 1 / (exp(diff/a) + 1)
-        #print('rating: {0:4.0f}, oppRating: {4:4.0f}, con: {1:7.3f}, a: {2:7.3f}, se: {3:6.3f}'.format(rating, c, a, se, oppRating))
-        return c*(bWin - se - e/2)
+        se = max(0.0, 1 / (exp(diff/a) + 1) - e/2)
+        gain = c*(bWin - se)
+        #print('rating: {0:4.0f}, oppRating: {4:4.0f}, con: {1:7.3f}, a: {2:7.3f}, se: {3:6.3f}, epsilon: {5:6.3f}, gain: {6:6.1f}'.format(rating, c, a, se, oppRating, e, gain))
+        return gain
 
 class Serie:
     def __init__(self, gocra):
