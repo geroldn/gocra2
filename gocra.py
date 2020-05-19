@@ -124,23 +124,25 @@ class RatingSystem:
 
     def getGain(self, color, rating, oppRating, handicap, bWin):
         e = self.epsilon
+        adjRating = rating
+        adjOppRating = oppRating
         if handicap > 0:
             if color == 'B':
-                rating = rating + 100*(handicap - 0.5)
+                adjRating = rating + 100*(handicap - 0.5)
             elif color == 'W':
-                oppRating = oppRating + 100*(handicap - 0.5)
+                adjOppRating = oppRating + 100*(handicap - 0.5)
             else:
                 print('Illegal color')
                 return None
-        if rating < oppRating:
-            a = self.getParms(rating)['A']
+        if adjRating < adjOppRating:
+            a = self.getParms(adjRating)['A']
         else:
-            a = self.getParms(oppRating)['A']
+            a = self.getParms(adjOppRating)['A']
         c = self.getParms(rating)['Con']
-        diff = oppRating - rating
+        diff = adjOppRating - adjRating
         se = max(0.0, 1 / (exp(diff/a) + 1) - e/2)
         gain = c*(bWin - se)
-        #print('rating: {0:4.0f}, oppRating: {4:4.0f}, con: {1:7.3f}, a: {2:7.3f}, se: {3:6.3f}, epsilon: {5:6.3f}, gain: {6:6.1f}'.format(rating, c, a, se, oppRating, e, gain))
+        #print('rating: {0:4.0f}, oppRating: {4:4.0f}, con: {1:7.3f}, a: {2:7.3f}, se: {3:6.3f}, epsilon: {5:6.3f}, gain: {6:6.1f}'.format(adjRating, c, a, se, adjOppRating, e, gain))
         return gain
 
 class Serie:
