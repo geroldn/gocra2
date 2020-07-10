@@ -518,6 +518,8 @@ class Participant:
         self.name = name
         self.rank = Rank(rank)
         self.newRank = Rank(rank)
+        if rating == 0:
+            rating = self.rank.round_rating()
         self.rating = rating
         self.id = _id
         self.nr = 0
