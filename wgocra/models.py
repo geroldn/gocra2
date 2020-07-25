@@ -2,12 +2,13 @@
 from django.db import models
 
 
-class Question(models.Model):
-    question_text = models.CharField(max_length=200)
-    pub_date = models.DateTimeField('date published')
+class Club(models.Model):
+    name = models.CharField(max_length=200)
+    city = models.CharField(max_length=200)
 
-
-class Choice(models.Model):
-    question = models.ForeignKey(Question, on_delete=models.CASCADE)
-    choice_text = models.CharField(max_length=200)
-    votes = models.IntegerField(default=0)
+class Player(models.Model):
+    first_name = models.CharField(max_length=200)
+    last_name = models.CharField(max_length=200)
+    egd_pin = models.CharField(max_length=10)
+    reg_date = models.DateTimeField('date registered')
+    club = models.ForeignKey(Club, null=True, on_delete=models.SET_NULL)

@@ -5,3 +5,7 @@ from django.http import HttpResponse
 
 def index(request):
     return HttpResponse("Hello world. You're in the wgocra index.")
+
+def current(request):
+    return render(request, 'wgocra/current.html')
+#    return HttpResponse("Let's have the current series.")
