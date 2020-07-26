@@ -1,0 +1,13 @@
+{% extends "wgocra/base.html" %}
+
+{% block title %}Clubs{% endblock %}
+
+{% block content %}
+<ul>
+{% for club in object_list %}
+    <li>{{ club.name }} - {{ club.city }}</li>
+{% empty %}
+    <li>No clubs yet.</li>
+{% endfor %}
+</ul>
+{% endblock %}

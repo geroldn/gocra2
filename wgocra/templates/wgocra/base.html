@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<head>
+</head>
+
+<body>
+    <h1>{% block title %}Gocra{% endblock %}</h1>
+    <div id="sidebar">
+        {% block sidebar %}
+        <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/clubs/">Clubs</a></li>
+            <li><a href="/players/">Players</a></li>
+            <li><a href="/admin/">(Django) Admin</a></li>
+        </ul>
+        {% endblock %}
+    </div>
+
+    <div id="content">
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

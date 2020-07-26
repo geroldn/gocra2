@@ -1,0 +1,13 @@
+{% extends "wgocra/base.html" %}
+
+{% block title %}Players{% endblock %}
+
+{% block content %}
+<ul>
+{% for player in object_list %}
+    <li>{{ player.first_name }} {{ player.last_name }}</li>
+{% empty %}
+    <li>No players yet.</li>
+{% endfor %}
+</ul>
+{% endblock %}
