@@ -141,5 +141,5 @@ django_heroku.settings(locals())
 LOGIN_REDIRECT_URL = '/'
 
 # SMTP relay settings
-EMAIL_HOST = smtp-relay.gmail.com
-DEFAULT_FROM_EMAIL = gocra2@nicolasen.com
+EMAIL_HOST = 'smtp-relay.gmail.com'
+DEFAULT_FROM_EMAIL = 'gocra2@nicolasen.com'
