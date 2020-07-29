@@ -139,3 +139,7 @@ django_heroku.settings(locals())
 
 # Redirect to home URL after login (Default redirects to /accounts/profile/)
 LOGIN_REDIRECT_URL = '/'
+
+# SMTP relay settings
+EMAIL_HOST = smtp-relay.gmail.com
+DEFAULT_FROM_EMAIL = gocra2@nicolasen.com
