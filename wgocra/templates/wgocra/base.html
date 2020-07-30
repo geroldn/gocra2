@@ -1,5 +1,7 @@
 <!DOCTYPE html>
 <head>
+{% load static %}
+
 {# Load the tag library #}
 {% load bootstrap4 %}
 
@@ -13,21 +15,39 @@
 
 <body>
     <h1>{% block title %}Gocra{% endblock %}</h1>
-    {% if request.user.is_authenticated %}
-      <a href="/accounts/logout">  Logout '{{ request.user.username }}'</a>
-    {% else %}
-      <a href="/accounts/login">  Login </a>
-    {% endif %}
+    <nav class="navbar navbar-expand-sm bg-light">
+      <a class="navbar-brand" href="/">
+       <img src="{% static 'wgocra/gocra_logo.png' %}"
+            alt="Logo" style="width:50px;">
+      </a>
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <a class="nav-link" href="/">Home</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/players/">Players</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/clubs/">Clubs</a>
+        </li>
+        {% if request.user.is_superuser %}
+        <li class="nav-item">
+          <a class="nav-link" href="/admin/">(Django)Admin</a>
+        </li>
+        {% endif %}
+      </ul>
+      <div class="navbar-text ml-auto mr-2">
+        {% if request.user.is_authenticated %}
+         {{ request.user.username }}
+         <a href="/accounts/logout">  ...Logout </a>
+         {% else %}
+           <a href="/accounts/login">  Login </a>
+         {% endif %}
+      </div>
+
+    </nav>
     <div id="sidebar">
         {% block sidebar %}
-        <ul>
-          {% if request.user.is_superuser %}
-            <li><a href="/admin/">(Django) Admin</a></li>
-          {% endif %}
-            <li><a href="/">Home</a></li>
-            <li><a href="/clubs/">Clubs</a></li>
-            <li><a href="/players/">Players</a></li>
-        </ul>
         {% endblock %}
     </div>
 

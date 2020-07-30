@@ -39,8 +39,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-# django-simple-menu
-    'menu',
     'bootstrap4'
 ]
 
