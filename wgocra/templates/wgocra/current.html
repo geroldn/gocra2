@@ -1,7 +1,7 @@
 
-<!DOCTYPE html>
-<html>
-<head>
+{% extends "wgocra/base.html" %}
+
+{% block head-extra %}
 <style>
 .black{
   color: black;
@@ -40,7 +40,11 @@ th, td {
   padding-right: 4px;
 }
 </style>
-</head>
+{% endblock %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
 <body>
   <h2>Stand lopende serie</h2>
   <table>
@@ -305,4 +309,4 @@ th, td {
     </tr>
   </table>
 </body>
-</html>
+{% endblock %}
