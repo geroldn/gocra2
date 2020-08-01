@@ -1,0 +1,13 @@
+#!/usr/bin/env xdg-open
+
+[Desktop Entry]
+Version=1.0
+Type=Application
+Terminal=false
+Exec=/usr/bin/java -jar /home/goclubutrecht/gocra/macmahon/macmahon-3.9.jar
+Name=macMahon
+Comment=macMahon
+Icon=/home/goclubutrecht/gocra/gocra/icons/macmahon.jpeg
+Name[en_US]=macmahon
+GenericName[en_US.UTF-8]=macMahon
+Comment[en_US.UTF-8]=macMahon

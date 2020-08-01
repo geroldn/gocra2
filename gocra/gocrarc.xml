@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Settings>
+  <Epsilon>0.016</Epsilon>
+  <gocra_home>/Users/gerold/dev/python/gocra/</gocra_home>
+  <serie_home>/Users/gerold/</serie_home>
+  <serie_file>UGC-2020-1.xml</serie_file>
+  <!--serie_file>UGC-2020-2.xml</serie_file-->
+  <s_name_column_width>32</s_name_column_width>
+  <s_ronde_column_width>15</s_ronde_column_width>
+  <sftp_host>upload.goclubutrecht.nl</sftp_host>
+  <sftp_dir>/home/httpd/goclub/wordpress/wp-content/uploads/2020/</sftp_dir>
+  <sftp_user>mirjam</sftp_user>
+  <sftp_sshkey>~/.ssh/ugc_gn_rsa</sftp_sshkey>
+  <sftp_sshkey>~/.ssh/ugc_gn_rsa</sftp_sshkey>
+  <sftp_askPw>False</sftp_askPw>
+</Settings>
