@@ -9,4 +9,10 @@
 </a>
 
 <p> Hier komt de serie </p>
+<p>
+  {% if 'mname' in request.session %}
+    {{ request.session.mname }}
+  {% endif %}
+ </p>
+
 {% endblock %}

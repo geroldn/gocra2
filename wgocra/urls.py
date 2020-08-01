@@ -8,5 +8,5 @@ urlpatterns = [
     path('clubs/', views.ClubListView.as_view(), name='gocra-clubs'),
     path('players/', views.PlayerListView.as_view(), name='gocra-players'),
     path('series/', views.series, name='gocra-series'),
-    path('upload/', views.upload_file, name='gocra-upload'),
+    path('upload/', views.upload_macmahon, name='gocra-upload'),
 ]
