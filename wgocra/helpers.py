@@ -5,6 +5,6 @@ class ExternalMacMahon:
         self.doc = xmltodict.parse(file.read())
         return True
 
-    def import2(self, memfile):
+    def xml_import(self, memfile):
         self.s_import(memfile)
         return self
