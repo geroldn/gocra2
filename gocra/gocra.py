@@ -715,8 +715,5 @@ def main():
     if len(gocra.messages) > 0:
         gocra.printMessages()
 
-main()
-
-
-
-
+if __name__ == '__main__':
+    main()
