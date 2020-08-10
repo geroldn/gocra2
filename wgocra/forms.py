@@ -1,5 +1,6 @@
+""" Helper classes """
 from django import forms
 
 class UploadFileForm(forms.Form):
-#    title = forms.CharField(max_length=50)
+    """ Form to get a file to upload """
     file = forms.FileField()

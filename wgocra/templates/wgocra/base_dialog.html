@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<head>
+{% load static %}
+
+{# Load the tag library #}
+{% load bootstrap4 %}
+
+{# Load CSS and JavaScript #}
+{% bootstrap_css %}
+{% bootstrap_javascript jquery='full' %}
+
+{# Display django.contrib.messages as Bootstrap alerts #}
+{% bootstrap_messages %}
+{% block head-extra %} {% endblock %}
+<link rel="shortcut icon" type="image/ico" href="{% static 'favicon.ico' %}">
+</head>
+
+<body>
+  <div class="container">
+    <div class="container">
+      <h1>{% block title %}Gocra{% endblock %}</h1>
+    </div>
+    <nav class="navbar navbar-expand-sm bg-light">
+
+    </nav>
+    <div id="sidebar">
+        {% block sidebar %}
+        {% endblock %}
+    </div>
+
+    <div id="content">
+        {% block content %}{% endblock %}
+    </div>
+  </div>
+</body>
+</html>

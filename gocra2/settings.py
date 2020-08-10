@@ -88,10 +88,6 @@ DATABASES = {
         'HOST': '127.0.0.1',
         'PORT': '5432',
     },
-#    'sqlite': {
-#        'ENGINE': 'django.db.backends.sqlite3',
-#        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-#    }
 }
 
 
@@ -132,6 +128,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 STATIC_URL = '/static/'
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static'),]
 
 #Activate django-heroku
 django_heroku.settings(locals())

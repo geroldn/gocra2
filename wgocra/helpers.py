@@ -1,4 +1,5 @@
 import xmltodict
+from .models import Series
 
 class ExternalMacMahon:
     def s_import(self, file):
@@ -7,4 +8,7 @@ class ExternalMacMahon:
 
     def xml_import(self, memfile):
         self.s_import(memfile)
-        return self
+        series = Series()
+        series.reg_import(self)
+        series.save()
+        return series.id

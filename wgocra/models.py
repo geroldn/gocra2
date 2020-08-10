@@ -26,26 +26,28 @@ class Series(models.Model):
     name = models.CharField(max_length=200)
     numberOfRounds = models.IntegerField()
     currentRoundNumber = models.IntegerField()
-    TakeCurrentRoundInAccount = models.BooleanField()
-    SeriesIsOpen = models.BooleanField()
+    takeCurrentRoundInAccount = models.BooleanField()
+    seriesIsOpen = models.BooleanField()
 
     def reg_import(self, macmahon):
         self.name = macmahon.doc['Tournament']['Name']
         self.numberOfRounds = int(macmahon.doc['Tournament']['NumberOfRounds'])
         self.currentRoundNumber = int(macmahon.doc['Tournament']['CurrentRoundNumber'])
-        self.takeCurrentRoundInAccount = macmahon.doc['Tournament']['TakeCurrentRoundInAccount']
+        self.takeCurrentRoundInAccount = True
+        self.seriesIsOpen = True
 
 class Participant(models.Model):
-    name = models.CharField(max_length=200)
     rank = models.CharField(max_length=10)
     rating = models.IntegerField()
     mm_id = models.IntegerField()
     series = models.ForeignKey(Series, blank=True, null=True, on_delete=models.CASCADE)
+    player = models.ForeignKey(Player, blank=True, null=True, on_delete=models.CASCADE)
 
-    def __init__(self, name, rank, rating, _id, series):
-        self.name = name
+    def __init__(self, first_name, last_name, rank, rating, _id, series):
+        self.firstName = first_name
+        self.lastName = last_name
         self.rank = Rank(rank)
-        self.newRank = Rank(rank)
+        self.new_rank = Rank(rank)
         if rating == 0:
             rating = self.rank.round_rating()
         self.rating = rating
@@ -57,7 +59,6 @@ class Participant(models.Model):
 
     def setNr(self, nr):
         self.nr = nr
-
 
 class Result(models.Model):
     participant = models.ForeignKey(Participant, on_delete=models.CASCADE,
