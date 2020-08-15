@@ -30,12 +30,12 @@ class SeriesView(TemplateView):
 class ClubListView(ListView):
     """ Render list of clubs """
     model = Club
-    template_name = 'wgocra/club_list.htl'
+    template_name = 'wgocra/club_list.html'
 
 class PlayerListView(ListView):
     """ Render list of players """
     model = Player
-    template_name = 'wgocra/player_list.htl'
+    template_name = 'wgocra/player_list.html'
 
 def upload_macmahon(request):
     """ Import macmahon file from local """
@@ -45,7 +45,7 @@ def upload_macmahon(request):
         if form.is_valid():
 #            logging.debug('POST valid')
             macmahon = ExternalMacMahon()
-            macmahon.xml_import(request.FILES['file'])
+            series_id = macmahon.xml_import(request.FILES['file'])
             request.session['mname'] = macmahon.doc['Tournament']['Name']
             return HttpResponseRedirect(reverse('gocra-series'))
         logging.debug('POST not valid')
