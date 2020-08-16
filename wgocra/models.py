@@ -1,9 +1,11 @@
+""" wgocra Django models """
 # Create your models here.
 from django.db import models
 from django.contrib.auth import models as auth_models
 
 
 class Club(models.Model):
+    """ Club in the system """
     name = models.CharField(max_length=200)
     city = models.CharField(max_length=200)
 

@@ -30,7 +30,7 @@ class ExternalMacMahon:
         series.numberOfRounds = int(self.doc['Tournament']['NumberOfRounds'])
         series.currentRoundNumber = int(self.doc['Tournament']['CurrentRoundNumber'])
         series.takeCurrentRoundInAccount = True
-        series.seriesIsOpen = True
+        series.seriesIsOpen = False
         series.save()
         series.participants = []
         series.results = []

@@ -4,15 +4,26 @@
 
 {% block content %}
 
-<a class="btn btn-secondary" href="/upload/">
-  Upload MacMahon xml
-</a>
-
+{% regroup series_results by participant as p_list %}
 <p> Hier komt de serie </p>
-<p>
-  {% if 'mname' in request.session %}
-    {{ request.session.mname }}
-  {% endif %}
- </p>
+<table>
+    {% for p in p_list %}
+        <tr>
+        <td>
+            {{ p.grouper.mm_id }}
+            {{ p.grouper.player.first_name }}
+            {{ p.grouper.player.last_name }}
+        </td>
+        {% for r in p.list %}
+            <td>
+                {{ r.opponent.mm_id }}
+                {{ r.win }}
+            </td>
+        {% endfor %}
+        </tr>
+    {% empty %}
+    <tr><td> Geen resultaten voor deze serie </td></tr>
+    {% endfor %}
+</table>
 
 {% endblock %}

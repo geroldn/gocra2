@@ -1,0 +1,36 @@
+{% extends "wgocra/base.html" %}
+
+{% block title %}Series{% endblock %}
+
+{% block content %}
+
+<a class="btn btn-secondary" href="/upload/">
+  Upload MacMahon xml
+</a>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th scope="col">open</th>
+            <th scope="col">serie</th>
+            <th scope="col">versie</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for serie in object_list %}
+        <tr>
+            <td>
+                {% if serie.seriesIsOpen %}
+                X
+                {% else %}
+                <a href="/series_open/{{ serie.pk }}">O</a>
+                {% endif %}
+            </td>
+            <td> {{ serie.name }} </td>
+            <td> {{ serie.version }} </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}
