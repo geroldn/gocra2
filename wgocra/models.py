@@ -58,6 +58,7 @@ class Result(models.Model):
         Participant, null=True, blank=True, on_delete=models.CASCADE,
         related_name='opp_results')
     round = models.IntegerField()
+    playing = models.BooleanField(default=False)
     color = models.CharField(max_length=5, null=True)
     handicap = models.IntegerField(null=True)
     win = models.CharField(max_length=4, null=True)

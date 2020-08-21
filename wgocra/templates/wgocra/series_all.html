@@ -28,6 +28,9 @@
             </td>
             <td> {{ serie.name }} </td>
             <td> {{ serie.version }} </td>
+            <td>
+                <a href="/series_delete/{{ serie.pk }}">delete</a>
+            </td>
         </tr>
         {% endfor %}
     </tbody>

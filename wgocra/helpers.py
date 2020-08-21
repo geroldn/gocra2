@@ -39,9 +39,15 @@ class ExternalMacMahon:
         for n_part, part in enumerate(series.participants):
             series.results.append([])
             for n_round in range(series.currentRoundNumber):
-                series.results[n_part].append(Result())
-                self.reg_result(series, n_part, n_round)
-
+                result = Result()
+                series.results[n_part].append(result)
+                result.participant = part
+                result.color = None
+                result.round = n_round + 1
+                result.win = ' '
+                result.save()
+                if n_round <= series.currentRoundNumber:
+                    self.reg_result(series, n_part, n_round)
         return series.pk
 
     def reg_participant(self, series, participant):
@@ -81,9 +87,6 @@ class ExternalMacMahon:
         """ Get result info from macmahon structure """
         participant = series.participants[n_participant]
         result = series.results[n_participant][n_round]
-        result.participant = participant
-        result.color = None
-        result.round = n_round + 1
         t_round = None
         for t_round in self.doc['Tournament']['TournamentRound']:
             if int(t_round['RoundNumber']) == n_round + 1:
@@ -114,7 +117,7 @@ class ExternalMacMahon:
                 elif t_pairing['Result'] == '0-1':
                     result.win = '-'
                 else:
-                    result.win = '='
+                    result.win = '?'
                 result.save()
                 break
             elif int(t_pairing['White']) == participant.mm_id:
@@ -128,7 +131,7 @@ class ExternalMacMahon:
                 elif t_pairing['Result'] == '1-0':
                     result.win = '-'
                 else:
-                    result.win = '='
+                    result.win = '?'
                 result.save()
                 break
 

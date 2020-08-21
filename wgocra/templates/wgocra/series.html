@@ -5,25 +5,57 @@
 {% block content %}
 
 {% regroup series_results by participant as p_list %}
-<p> Hier komt de serie </p>
-<table>
+<table class="table table-striped table-sm">
+  <thead>
+    <tr>
+      <th scope="col">{{ series.first.name }}</th>
+      {% for round in rounds %}
+	{% if round.round == current %}
+	    <th scope="col" class="text-center">
+		<a href="/round/{{ round.round }}"
+		    class="bg-primary text-white"> Pairing </a>
+	    </th>
+	{% else %}
+	    <th scope="col" class="text-center">
+		<a href="/series_set_round/{{ round.round }}"> {{ round.name }} </a>
+	    </th>
+	{% endif %}
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
     {% for p in p_list %}
-        <tr>
-        <td>
-            {{ p.grouper.mm_id }}
-            {{ p.grouper.player.first_name }}
-            {{ p.grouper.player.last_name }}
-        </td>
-        {% for r in p.list %}
-            <td>
-                {{ r.opponent.mm_id }}
-                {{ r.win }}
-            </td>
-        {% endfor %}
-        </tr>
+    <tr>
+      <td>
+        {{ p.grouper.mm_id }}
+        {{ p.grouper.player.first_name }}
+        {{ p.grouper.player.last_name }}
+      </td>
+      {% for r in p.list %}
+      <td class="text-center">
+	{% if r.round < current %}
+	    {{ r.opponent.mm_id }}
+	    {{ r.win }}
+	{% elif r.round == current %}
+	    {% if r.color == None %}
+		{% if r.playing %}
+		    <a href="/result_toggle_playing/{{ r.pk }}"
+			    class="bg-danger text-white ">- ? -</a>
+		{% else %}
+		    <a href="/result_toggle_playing/{{ r.pk }}">o</a>
+		{% endif %}
+	    {% else %}
+		{{ r.opponent.mm_id }}
+		{{ r.win }}
+	    {% endif %}
+	{% endif %}
+      </td>
+      {% endfor %}
+    </tr>
     {% empty %}
     <tr><td> Geen resultaten voor deze serie </td></tr>
     {% endfor %}
+  </tbody>
 </table>
 
 {% endblock %}

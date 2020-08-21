@@ -1,0 +1,59 @@
+{% extends "wgocra/base.html" %}
+
+{% block title %}Round{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid">
+    <div class="row">
+    <div class="col-8">
+        <table class=table>
+            <thead>
+                <tr>
+                    <th>Zwart</th>
+                    <th>Wit</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in round_results %}
+                <tr>
+                    <td>
+                        {{ r.participant.player.first_name }}
+                        {{ r.participant.player.last_name }}
+                    </td>
+                    <td>
+                        {{ r.opponent.player.first_name }}
+                        {{ r.opponent.player.last_name }}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td> Geen resultaten voor deze ronde </td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="col">
+        <table class=table>
+            <thead>
+                <tr>
+                    <th>Speelt in ronde</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in not_paired %}
+                <tr>
+                    <td>
+                        {{ p.player.first_name }}
+                        {{ p.player.last_name }}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td> Geen resultaten voor deze ronde </td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    </div>
+</div>
+
+{% endblock %}
