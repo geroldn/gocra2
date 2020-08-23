@@ -40,11 +40,13 @@ class Participant(models.Model):
     mm_id = models.IntegerField()
     series = models.ForeignKey(Series, blank=True, null=True, on_delete=models.CASCADE)
     player = models.ForeignKey(Player, blank=True, null=True, on_delete=models.CASCADE)
-    nr = 0
-    startrating = 0
-    resultrating = 0
-    init_rank = None
-    new_rank = None
+    nr = models.IntegerField(default=0)
+    resultrating = models.IntegerField(default=0)
+    gain = models.IntegerField(null=True, default=0)
+    games = models.IntegerField(null=True, default=0)
+    wins = models.IntegerField(null=True, default=0)
+    score = models.CharField(max_length=10, default='')
+    new_rank = models.CharField(max_length=10, default='')
 
     def setNr(self, nr):
         self.nr = nr
@@ -62,3 +64,5 @@ class Result(models.Model):
     color = models.CharField(max_length=5, null=True)
     handicap = models.IntegerField(null=True)
     win = models.CharField(max_length=4, null=True)
+    gain = models.FloatField(null=True, default=0.0)
+    r_string = models.CharField(max_length=10, null=True, default='')

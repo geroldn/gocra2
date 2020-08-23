@@ -48,6 +48,15 @@ class ExternalMacMahon:
                 result.save()
                 if n_round <= series.currentRoundNumber:
                     self.reg_result(series, n_part, n_round)
+            for n_round in range(series.currentRoundNumber,
+                                 series.numberOfRounds):
+                result = Result()
+                series.results[n_part].append(result)
+                result.participant = part
+                result.color = None
+                result.round = n_round + 1
+                result.win = ' '
+                result.save()
         return series.pk
 
     def reg_participant(self, series, participant):

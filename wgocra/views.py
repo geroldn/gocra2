@@ -8,6 +8,7 @@ from django.views.generic import ListView, TemplateView
 from .models import Club, Player, Series, Participant, Result
 from .forms import UploadFileForm
 from .helpers import ExternalMacMahon
+from .ratingsystem import RatingSystem as Rsys
 
 #logging.basicConfig(filename='log/gocra.log', level=logging.DEBUG)
 
@@ -75,9 +76,13 @@ class SeriesDetailView(TemplateView):
         context['series'] = series_list
         series = series_list[0]
         current_round_number = series.currentRoundNumber
+        # calculate the ratings:
+        participants = Participant.objects.filter(series=series)
+        self.calculate_rating(participants)
+        self.rank_participants(participants, series)
         series_results = Result.objects.filter(
             participant__series=series
-        ).order_by('participant__mm_id', 'round')
+        ).order_by('participant__nr', 'round')
         context['series_results'] = series_results
         # create round headings for rendering:
         rounds = []
@@ -91,6 +96,69 @@ class SeriesDetailView(TemplateView):
         context['rounds'] = rounds
         context['current'] = current_round_number
         return context
+
+    def calculate_rating(self, participants):
+        """
+        Calculate rating gains for each result in the series
+        """
+        #import pdb; pdb.set_trace()
+        for participant in participants:
+            participant.resultrating = participant.rating
+            participant.gain = 0
+            participant.games = 0
+            participant.wins = 0
+            participant.new_rank = ''
+            results = Result.objects.filter(
+                participant=participant).order_by('round')
+            for result in results:
+                result.r_string = ''
+                result.gain = 0
+                if result.round <= participant.series.currentRoundNumber and result.color:
+                    result.gain = Rsys.calculate_gain(
+                        result.color,
+                        participant.rating,
+                        result.opponent.rating,
+                        result.handicap,
+                        result.win == '+'
+                    )
+                    participant.resultrating += result.gain
+                    participant.gain += result.gain
+                    if result.win in ['+', '-']:
+                        participant.games += 1
+                    if result.win == '+':
+                        participant.wins += 1
+                result.save()
+            participant.score = '{:d}/{:d}'.format(participant.wins, participant.games)
+            if participant.gain < -100:
+                participant.gain = -100
+                participant.resultrating = participant.rating - 100
+            participant.save()
+
+    def rank_participants(self, participants, series):
+        """
+        Rank participants according to their results.
+        """
+        for p_enum in enumerate(
+                sorted(
+                    participants,
+                    key=lambda ptnt: (ptnt.wins, ptnt.gain),
+                    reverse=True
+                ),
+                1 #start rank value
+            ):
+            #p_enum is (rank number, paricipant)
+            participant = participants.get(id=p_enum[1].id)
+            participant.nr = p_enum[0]
+            participant.save()
+        results = Result.objects.filter(participant__series=series)
+        for result in results:
+            if result.color:
+                result.r_string = '{:d}{:s}/{:s}{:d}'.format(
+                    result.opponent.nr,
+                    result.win,
+                    result.color,
+                    result.handicap)
+                result.save()
 
 class SeriesListView(ListView):
     """
