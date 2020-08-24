@@ -7,9 +7,9 @@ from .models import Series, Participant, Player, Result
 def get_handicap(rank_b, rank_w):
     rank1 = Rank(rank_b)
     rank2 = Rank(rank_w)
-    rank1.round()
-    rank2.round()
-    return (rank2.rating - rank1.rating) / 100
+    rating1 = rank1.round_rating()
+    rating2 = rank2.round_rating()
+    return (rating2 - rating1) / 100
 
 class ExternalMacMahon:
     """ Representation of external macmahon xml file (Gerlach) """

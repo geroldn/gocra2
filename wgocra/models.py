@@ -2,6 +2,7 @@
 # Create your models here.
 from django.db import models
 from django.contrib.auth import models as auth_models
+from gocra.gocra import Rank
 
 
 class Club(models.Model):
@@ -47,6 +48,14 @@ class Participant(models.Model):
     wins = models.IntegerField(null=True, default=0)
     score = models.CharField(max_length=10, default='')
     new_rank = models.CharField(max_length=10, default='')
+
+    @property
+    def mm_score(self):
+        #import pdb; pdb.set_trace()
+        rank = Rank(self.rank)
+        round_rating = rank.round_rating()
+        mm_start = round_rating/100
+        return mm_start + self.wins
 
     def setNr(self, nr):
         self.nr = nr

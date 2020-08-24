@@ -112,7 +112,10 @@ class SeriesDetailView(TemplateView):
             for result in results:
                 result.r_string = ''
                 result.gain = 0
-                if result.round <= participant.series.currentRoundNumber and result.color:
+                if (result.round <= participant.series.currentRoundNumber
+                   ) and (
+                       result.color in ('B', 'W') and result.win in ('+', '-')
+                   ):
                     result.gain = Rsys.calculate_gain(
                         result.color,
                         participant.rating,
@@ -151,7 +154,7 @@ class SeriesDetailView(TemplateView):
             participant.save()
         results = Result.objects.filter(participant__series=series)
         for result in results:
-            if result.color:
+            if result.color in ('B', 'W') and result.win in ('+', '-', '?'):
                 result.r_string = '{:d}{:s}/{:s}{:d}'.format(
                     result.opponent.nr,
                     result.win,
@@ -245,7 +248,7 @@ def result_toggle_playing(request, *args, **kwargs):
 
 @login_required
 def add_game(request, *args, **kwargs):
-    import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
     current = kwargs['current']
     candidate = kwargs['p_id']
     p_candidate = Participant.objects.get(id=candidate)
@@ -259,26 +262,50 @@ def add_game(request, *args, **kwargs):
         opponent = half_game.participant
         half_game.opponent = p_candidate
         new_game.opponent = opponent
-        if opponent.rating < p_candidate.rating:
+        if opponent.mm_score < p_candidate.mm_score:
             p_black = opponent
             p_white = p_candidate
-            half_game.color = 'W'
-            new_game.color = 'B'
+            half_game.color = 'B'
+            new_game.color = 'W'
         else:
             p_black = p_candidate
             p_white = opponent
-            half_game.color = 'B'
-            new_game.color = 'W'
+            half_game.color = 'W'
+            new_game.color = 'B'
         handicap = get_handicap(p_black.rank, p_white.rank)
         new_game.handicap = handicap
         half_game.handicap = handicap
-        new_game.result = '?'
-        half_game.result = '?'
+        new_game.win = '?'
+        half_game.win = '?'
         new_game.save()
         half_game.save()
     else:
         new_game.color = '?'
-        new_game.save
-
-
+        new_game.save()
     return HttpResponseRedirect('/round/{:d}'.format(current))
+
+@login_required
+def drop_pairing(request, *args, **kwargs):
+    current = kwargs['current']
+    results = Result.objects.filter(
+        participant__series__seriesIsOpen=True
+    ).filter(
+        round=current
+    )
+    for result in results:
+        result.opponent = None
+        result.color = None
+        result.win = None
+        result.save()
+        results2 = Result.objects.filter(
+            opponent=result.participant
+        ).filter(
+            round=current
+        )
+        for result in results2: #will be 1 opponent result
+            result.opponent = None
+            result.color = None
+            result.win = None
+            result.save()
+    return HttpResponseRedirect('/round/{:d}'.format(current))
+
