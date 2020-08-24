@@ -1,12 +1,14 @@
 {% extends "wgocra/base.html" %}
 
 {% block title %}Series{% endblock %}
+{% block actions %}
+  <a class="btn btn-secondary" href="/upload/">
+  Upload MacMahon xml
+</a>
+{% endblock %}
 
 {% block content %}
 
-<a class="btn btn-secondary" href="/upload/">
-  Upload MacMahon xml
-</a>
 
 <table class="table">
     <thead>

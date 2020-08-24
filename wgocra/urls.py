@@ -3,11 +3,12 @@ from . import views
 
 urlpatterns = [
     path('', views.SeriesDetailView.as_view(), name='gocra-series'),
-    path('current/', views.current, name='gocra-current'),
     path('clubs/', views.ClubListView.as_view(), name='gocra-clubs'),
     path('players/', views.PlayerListView.as_view(), name='gocra-players'),
     path('series/', views.SeriesDetailView.as_view(), name='gocra-series'),
-    path('round/<int:id>', views.RoundDetailView.as_view(), name='gocra-round'),
+    path('round/<int:current>', views.RoundDetailView.as_view(), name='gocra-round'),
+    path('add_game/<int:p_id>/<int:current>/', views.add_game,
+         name='gocra-add_game'),
     path('series_all/', views.SeriesListView.as_view(), name='gocra-series-list'),
     path('series_set_round/<int:round>/', views.series_set_round, name='gocra-series-set_round'),
     path('series_open/<int:id>/', views.series_open, name='gocra-series-open'),

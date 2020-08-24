@@ -4,6 +4,13 @@ import xmltodict
 from gocra.gocra import Rank
 from .models import Series, Participant, Player, Result
 
+def get_handicap(rank_b, rank_w):
+    rank1 = Rank(rank_b)
+    rank2 = Rank(rank_w)
+    rank1.round()
+    rank2.round()
+    return (rank2.rating - rank1.rating) / 100
+
 class ExternalMacMahon:
     """ Representation of external macmahon xml file (Gerlach) """
     def __init__(self):
@@ -80,8 +87,6 @@ class ExternalMacMahon:
             spart = Participant()
             rank = participant['GoPlayer']['GoLevel']
             spart.rank = rank
-            spart.init_rank = Rank(rank)
-            spart.new_rank = Rank(rank)
             rating = int(participant['GoPlayer']['Rating'])
             if rating == 0:
                 rating = spart.init_rank.round_rating()

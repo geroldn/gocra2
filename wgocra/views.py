@@ -1,13 +1,15 @@
 """ gocra Django views """
 # Create your views here.
 #import logging
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
 from django.db.models import Exists, OuterRef
 from django.shortcuts import render, reverse
 from django.http import HttpResponseRedirect
 from django.views.generic import ListView, TemplateView
 from .models import Club, Player, Series, Participant, Result
 from .forms import UploadFileForm
-from .helpers import ExternalMacMahon
+from .helpers import ExternalMacMahon, get_handicap
 from .ratingsystem import RatingSystem as Rsys
 
 #logging.basicConfig(filename='log/gocra.log', level=logging.DEBUG)
@@ -17,11 +19,7 @@ def index(request):
     """ Render the gocra index page """
     return render(request, 'wgocra/index.html')
 
-def current(request):
-    ''' This is just a sample. Will be removed '''
-    return render(request, 'wgocra/current.html')
-#    return HttpResponse("Let's have the current series.")
-
+@method_decorator(login_required, name='dispatch')
 class RoundDetailView(TemplateView):
     """
     Render Round as Result Details
@@ -30,6 +28,7 @@ class RoundDetailView(TemplateView):
 
     def get_context_data(self, **kwargs):
         #import pdb; pdb.set_trace()
+        current = self.kwargs['current']
         context = super().get_context_data(**kwargs)
         serie = Series.objects.get(seriesIsOpen=True)
         if serie:
@@ -37,7 +36,7 @@ class RoundDetailView(TemplateView):
             round_results = Result.objects.filter(
                 participant__series=serie
             ).filter(
-                round=serie.currentRoundNumber
+                round=current
             ).filter(
                 color='B'
             )
@@ -49,7 +48,7 @@ class RoundDetailView(TemplateView):
             ).filter(
                 playing=True
             ).filter(
-                round=serie.currentRoundNumber
+                round=current
             )
             not_paired = Participant.objects.filter(
                 series=serie
@@ -141,7 +140,7 @@ class SeriesDetailView(TemplateView):
         for p_enum in enumerate(
                 sorted(
                     participants,
-                    key=lambda ptnt: (ptnt.wins, ptnt.gain),
+                    key=lambda ptnt: (ptnt.wins, ptnt.gain, ptnt.rating),
                     reverse=True
                 ),
                 1 #start rank value
@@ -160,6 +159,7 @@ class SeriesDetailView(TemplateView):
                     result.handicap)
                 result.save()
 
+@method_decorator(login_required, name='dispatch')
 class SeriesListView(ListView):
     """
     Renders a list of Gocra Series.
@@ -168,16 +168,19 @@ class SeriesListView(ListView):
     ordering = ['-name', '-version']
     template_name = 'wgocra/series_all.html'
 
+@method_decorator(login_required, name='dispatch')
 class ClubListView(ListView):
     """ Render list of clubs """
     model = Club
     template_name = 'wgocra/club_list.html'
 
+@method_decorator(login_required, name='dispatch')
 class PlayerListView(ListView):
     """ Render list of players """
     model = Player
     template_name = 'wgocra/player_list.html'
 
+@login_required
 def upload_macmahon(request):
     """ Import macmahon file from local """
     if request.method == 'POST':
@@ -191,6 +194,7 @@ def upload_macmahon(request):
         form = UploadFileForm()
     return render(request, 'wgocra/upload.html', {'form': form})
 
+@login_required
 def series_set_round(request, *args, **kwargs):
     #import pdb; pdb.set_trace()
     round = kwargs['round']
@@ -206,6 +210,7 @@ def series_set_round(request, *args, **kwargs):
         '''
     return HttpResponseRedirect(reverse('gocra-series'))
 
+@login_required
 def series_delete(request, *args, **kwargs):
     """ Delete specific series """
     series_id = kwargs['id']
@@ -214,6 +219,7 @@ def series_delete(request, *args, **kwargs):
         series.delete()
     return HttpResponseRedirect(reverse('gocra-series-list'))
 
+@login_required
 def series_open(request, *args, **kwargs):
     """ Set specific series as open """
     series_id = kwargs['id']
@@ -227,6 +233,7 @@ def series_open(request, *args, **kwargs):
         series.save()
     return HttpResponseRedirect(reverse('gocra-series-list'))
 
+@login_required
 def result_toggle_playing(request, *args, **kwargs):
     """ Toggle round result as playing for player """
     result_id = kwargs['id']
@@ -236,3 +243,42 @@ def result_toggle_playing(request, *args, **kwargs):
         result.save()
     return HttpResponseRedirect(reverse('gocra-series'))
 
+@login_required
+def add_game(request, *args, **kwargs):
+    import pdb; pdb.set_trace()
+    current = kwargs['current']
+    candidate = kwargs['p_id']
+    p_candidate = Participant.objects.get(id=candidate)
+    new_game = Result.objects.get(participant=p_candidate,
+                                round=current)
+    half_games = Result.objects.filter(participant__series=new_game.participant.series,
+                                   round=current,
+                                   color='?')
+    if half_games:
+        half_game = half_games[0]
+        opponent = half_game.participant
+        half_game.opponent = p_candidate
+        new_game.opponent = opponent
+        if opponent.rating < p_candidate.rating:
+            p_black = opponent
+            p_white = p_candidate
+            half_game.color = 'W'
+            new_game.color = 'B'
+        else:
+            p_black = p_candidate
+            p_white = opponent
+            half_game.color = 'B'
+            new_game.color = 'W'
+        handicap = get_handicap(p_black.rank, p_white.rank)
+        new_game.handicap = handicap
+        half_game.handicap = handicap
+        new_game.result = '?'
+        half_game.result = '?'
+        new_game.save()
+        half_game.save()
+    else:
+        new_game.color = '?'
+        new_game.save
+
+
+    return HttpResponseRedirect('/round/{:d}'.format(current))

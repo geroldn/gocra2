@@ -1,6 +1,11 @@
 {% extends "wgocra/base.html" %}
 
-{% block title %}Round{% endblock %}
+{% block title %}Ronde {{ current }}{% endblock %}
+{% block actions %}
+  <a class="btn btn-secondary" href="/series/">
+  Serie
+</a>
+{% endblock %}
 
 {% block content %}
 
@@ -27,7 +32,7 @@
                     </td>
                 </tr>
                 {% empty %}
-                <tr><td> Geen niet ingedeelde spelers</td></tr>
+                <tr><td> Geen ingedeelde spelers</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -43,12 +48,13 @@
                 {% for p in not_paired %}
                 <tr>
                     <td>
+                        <a href="/add_game/{{ p.id }}/{{ current }}/">o</a>
                         {{ p.player.first_name }}
                         {{ p.player.last_name }}
                     </td>
                 </tr>
                 {% empty %}
-                <tr><td> Geen resultaten voor deze ronde </td></tr>
+                <tr><td> Geen niet ingedeelde spelers</td></tr>
                 {% endfor %}
             </tbody>
         </table>

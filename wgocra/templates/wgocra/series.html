@@ -1,6 +1,11 @@
 {% extends "wgocra/base.html" %}
 
 {% block title %}Serie{% endblock %}
+{% block actions %}
+  <a class="btn btn-secondary" href="/round/{{ current }}">
+  Indeling ronde {{ current }}
+</a>
+{% endblock %}
 
 {% block content %}
 
@@ -12,8 +17,7 @@
       {% for round in rounds %}
 	{% if round.round == current %}
 	    <th scope="col" class="text-center" colspan="2">
-		<a href="/round/{{ round.round }}"
-		    class="bg-primary text-white"> Pairing </a>
+		  {{ round.name }}
 	    </th>
 	{% else %}
 	    <th scope="col" class="text-center" colspan="2">
