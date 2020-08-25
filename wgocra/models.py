@@ -46,7 +46,8 @@ class Participant(models.Model):
     gain = models.IntegerField(null=True, default=0)
     games = models.IntegerField(null=True, default=0)
     wins = models.IntegerField(null=True, default=0)
-    score = models.CharField(max_length=10, default='')
+    score = models.FloatField(null=True, default=0)
+    points_str = models.CharField(max_length=10, default='')
     new_rank = models.CharField(max_length=10, default='')
 
     @property
@@ -54,7 +55,7 @@ class Participant(models.Model):
         #import pdb; pdb.set_trace()
         rank = Rank(self.rank)
         round_rating = rank.round_rating()
-        mm_start = round_rating/100
+        mm_start = 14.0 + round_rating/100
         return mm_start + self.wins
 
     def setNr(self, nr):

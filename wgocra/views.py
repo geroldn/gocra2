@@ -106,31 +106,36 @@ class SeriesDetailView(TemplateView):
             participant.gain = 0
             participant.games = 0
             participant.wins = 0
+            participant.score = 0.0 + participant.mm_score
             participant.new_rank = ''
             results = Result.objects.filter(
                 participant=participant).order_by('round')
             for result in results:
                 result.r_string = ''
                 result.gain = 0
-                if (result.round <= participant.series.currentRoundNumber
-                   ) and (
-                       result.color in ('B', 'W') and result.win in ('+', '-')
-                   ):
-                    result.gain = Rsys.calculate_gain(
-                        result.color,
-                        participant.rating,
-                        result.opponent.rating,
-                        result.handicap,
-                        result.win == '+'
-                    )
-                    participant.resultrating += result.gain
-                    participant.gain += result.gain
-                    if result.win in ['+', '-']:
-                        participant.games += 1
-                    if result.win == '+':
-                        participant.wins += 1
+                if result.round <= participant.series.currentRoundNumber:
+                    if result.color in ('B', 'W'):
+                        if result.win in ('+', '-'):
+                            result.gain = Rsys.calculate_gain(
+                                result.color,
+                                participant.rating,
+                                result.opponent.rating,
+                                result.handicap,
+                                result.win == '+'
+                            )
+                            participant.resultrating += result.gain
+                            participant.gain += result.gain
+                            if result.win in ('+', '-'):
+                                participant.games += 1
+                            if result.win == '+':
+                                participant.wins += 1
+                                participant.score += 1.0
+                        else:
+                            participant.score += 0.5
+                    else:
+                        participant.score += 0.5
                 result.save()
-            participant.score = '{:d}/{:d}'.format(participant.wins, participant.games)
+            participant.points_str = '{:d}/{:d}'.format(participant.wins, participant.games)
             if participant.gain < -100:
                 participant.gain = -100
                 participant.resultrating = participant.rating - 100
