@@ -4,12 +4,8 @@ import xmltodict
 from gocra.gocra import Rank
 from .models import Series, Participant, Player, Result
 
-def get_handicap(rank_b, rank_w):
-    rank1 = Rank(rank_b)
-    rank2 = Rank(rank_w)
-    rating1 = rank1.round_rating()
-    rating2 = rank2.round_rating()
-    return (rating2 - rating1) / 100
+def get_handicap(mm_b, mm_w):
+    return int((mm_w - mm_b) // 1)
 
 class ExternalMacMahon:
     """ Representation of external macmahon xml file (Gerlach) """

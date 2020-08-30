@@ -22,6 +22,9 @@
                 <tr>
                     <th>Zwart</th>
                     <th>Wit</th>
+                    <th>Handicap</th>
+                    <th>Komi</th>
+                    <th>Resultaat</th>
                 </tr>
             </thead>
             <tbody>
@@ -34,6 +37,18 @@
                     <td>
                         {{ r.opponent.player.first_name }}
                         {{ r.opponent.player.last_name }}
+                    </td>
+                    <td>
+                        {{ r.handicap }}
+                    </td>
+                    <td>
+                        {{ r.komi }}
+                    </td>
+                    <td>
+                        <a href="/wins_game/{{ r.id }}/B/">o</a>
+                        {{ r.pr_string }}
+                        <a href="/wins_game/{{ r.id }}/W/">o</a>
+                        <a href="/wins_game/{{ r.id }}/X/">x</a>
                     </td>
                 </tr>
                 {% empty %}

@@ -9,6 +9,8 @@ urlpatterns = [
     path('round/<int:current>', views.RoundDetailView.as_view(), name='gocra-round'),
     path('add_game/<int:p_id>/<int:current>/', views.add_game,
          name='gocra-add-game'),
+    path('wins_game/<int:r_id>/<str:color>/', views.wins_game,
+         name='gocra-add-game'),
     path('drop_pairing/<int:current>/', views.drop_pairing,
          name='gocra-drop-pairing'),
     path('series_all/', views.SeriesListView.as_view(), name='gocra-series-list'),

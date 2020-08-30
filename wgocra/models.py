@@ -73,6 +73,31 @@ class Result(models.Model):
     playing = models.BooleanField(default=False)
     color = models.CharField(max_length=5, null=True)
     handicap = models.IntegerField(null=True)
+    komi = models.FloatField(null=True, default=0.0)
     win = models.CharField(max_length=4, null=True)
     gain = models.FloatField(null=True, default=0.0)
-    r_string = models.CharField(max_length=10, null=True, default='')
+    #r_string = models.CharField(max_length=10, null=True, default='')
+
+    @property
+    def r_string(self):
+        r_string = ''
+        if self.color in ('B', 'W') and self.win in ('+', '-', '?'):
+            r_string = '{:d}{:s}/{:s}{:d}'.format(
+                self.opponent.nr,
+                self.win,
+                self.color,
+                self.handicap)
+        return r_string
+
+    @property
+    def pr_string(self):
+        if self.color in ('B', 'W') and self.win in ('+', '-', '?'):
+            if self.win == '?':
+                pr_string = '?-?'
+            elif self.win == '+':
+                pr_string = '1-0'
+            elif self.win == '-':
+                pr_string = '0-1'
+            else:
+                pr_string = ''
+        return pr_string

@@ -32,14 +32,13 @@ class RoundDetailView(TemplateView):
         context = super().get_context_data(**kwargs)
         serie = Series.objects.get(seriesIsOpen=True)
         if serie:
-            #serie = series[0]
             round_results = Result.objects.filter(
                 participant__series=serie
             ).filter(
                 round=current
             ).filter(
                 color='B'
-            )
+            ).order_by('participant__nr')
             context['round_results'] = round_results
             null_pairing = Result.objects.filter(
                 participant=OuterRef('pk')
@@ -111,7 +110,6 @@ class SeriesDetailView(TemplateView):
             results = Result.objects.filter(
                 participant=participant).order_by('round')
             for result in results:
-                result.r_string = ''
                 result.gain = 0
                 if result.round <= participant.series.currentRoundNumber:
                     if result.color in ('B', 'W'):
@@ -153,19 +151,10 @@ class SeriesDetailView(TemplateView):
                 ),
                 1 #start rank value
             ):
-            #p_enum is (rank number, paricipant)
             participant = participants.get(id=p_enum[1].id)
             participant.nr = p_enum[0]
             participant.save()
         results = Result.objects.filter(participant__series=series)
-        for result in results:
-            if result.color in ('B', 'W') and result.win in ('+', '-', '?'):
-                result.r_string = '{:d}{:s}/{:s}{:d}'.format(
-                    result.opponent.nr,
-                    result.win,
-                    result.color,
-                    result.handicap)
-                result.save()
 
 @method_decorator(login_required, name='dispatch')
 class SeriesListView(ListView):
@@ -252,6 +241,28 @@ def result_toggle_playing(request, *args, **kwargs):
     return HttpResponseRedirect(reverse('gocra-series'))
 
 @login_required
+def wins_game(request, *args, **kwargs):
+    #import pdb; pdb.set_trace()
+    color = kwargs['color']
+    result_id = kwargs['r_id']
+    result = Result.objects.get(id=result_id)
+    current = result.round
+    result2 = Result.objects.get(participant=result.opponent,
+                                 round=current)
+    if color == 'B':
+        result.win = '+'
+        result2.win = '-'
+    elif color == 'W':
+        result.win = '-'
+        result2.win = '+'
+    else:
+        result.win = '?'
+        result2.win = '?'
+    result.save()
+    result2.save()
+    return HttpResponseRedirect('/round/{:d}'.format(current))
+
+@login_required
 def add_game(request, *args, **kwargs):
     #import pdb; pdb.set_trace()
     current = kwargs['current']
@@ -277,7 +288,7 @@ def add_game(request, *args, **kwargs):
             p_white = opponent
             half_game.color = 'W'
             new_game.color = 'B'
-        handicap = get_handicap(p_black.rank, p_white.rank)
+        handicap = get_handicap(p_black.mm_score, p_white.mm_score)
         new_game.handicap = handicap
         half_game.handicap = handicap
         new_game.win = '?'
