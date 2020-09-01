@@ -30,33 +30,38 @@ class RoundDetailView(TemplateView):
         #import pdb; pdb.set_trace()
         current = self.kwargs['current']
         context = super().get_context_data(**kwargs)
-        serie = Series.objects.get(seriesIsOpen=True)
-        if serie:
+        series = Series.objects.get(seriesIsOpen=True)
+        if series:
             round_results = Result.objects.filter(
-                participant__series=serie
+                participant__series=series
             ).filter(
                 round=current
             ).filter(
-                color='B'
+                color__in=['B', '?']
             ).order_by('participant__nr')
             context['round_results'] = round_results
-            null_pairing = Result.objects.filter(
-                participant=OuterRef('pk')
-            ).filter(
-                color=None
-            ).filter(
-                playing=True
-            ).filter(
-                round=current
-            )
-            not_paired = Participant.objects.filter(
-                series=serie
-            ).filter(
-                Exists(null_pairing)
-            )
+            not_paired = get_not_paired(series, current)
             context['not_paired'] = not_paired
             return context
         return None
+
+def get_not_paired(series, round):
+    ''' Return participants not paired for this round '''
+    null_pairing = Result.objects.filter(
+        participant=OuterRef('pk')
+    ).filter(
+        color=None
+    ).filter(
+        playing=True
+    ).filter(
+        round=round
+    )
+    not_paired = Participant.objects.filter(
+        series=series
+    ).filter(
+        Exists(null_pairing)
+    )
+    return not_paired
 
 class SeriesDetailView(TemplateView):
     """
@@ -105,7 +110,7 @@ class SeriesDetailView(TemplateView):
             participant.gain = 0
             participant.games = 0
             participant.wins = 0
-            participant.score = 0.0 + participant.mm_score
+            participant.score = 0.0 + participant.initial_mm
             participant.new_rank = ''
             results = Result.objects.filter(
                 participant=participant).order_by('round')
@@ -278,7 +283,7 @@ def add_game(request, *args, **kwargs):
         opponent = half_game.participant
         half_game.opponent = p_candidate
         new_game.opponent = opponent
-        if opponent.mm_score < p_candidate.mm_score:
+        if opponent.score < p_candidate.score:
             p_black = opponent
             p_white = p_candidate
             half_game.color = 'B'
@@ -288,7 +293,7 @@ def add_game(request, *args, **kwargs):
             p_white = opponent
             half_game.color = 'W'
             new_game.color = 'B'
-        handicap = get_handicap(p_black.mm_score, p_white.mm_score)
+        handicap = get_handicap(p_black.score, p_white.score)
         new_game.handicap = handicap
         half_game.handicap = handicap
         new_game.win = '?'
@@ -297,8 +302,37 @@ def add_game(request, *args, **kwargs):
         half_game.save()
     else:
         new_game.color = '?'
+        new_game.handicap = 0
+        new_game.komi = 0.0
         new_game.save()
     return HttpResponseRedirect('/round/{:d}'.format(current))
+
+@login_required
+def make_pairing(request, *args, **kwargs):
+    current = kwargs['current']
+    series_l = Series.objects.filter(seriesIsOpen=True)
+    if series:
+        series = series_l[0]
+        to_pair = get_not_paired(series, current)
+        to_pair_ids = []
+        for p in to_pair:
+            to_pair_ids.append(p.id)
+        paired = pair(to_pair_ids, series, current)
+    return HttpResponseRedirect('/round/{:d}'.format(current))
+
+def pair(to_pair, series, round):
+    paired = {}
+    paired['score'] = 0
+    paired['pairing'] = []
+    if len(to_pair) == 2:
+        paired['pairing'].append((to_pair[0], to_pair[1]))
+        score(paired, series, round)
+    if len(to_pair) > 2:
+        _score = 1000000
+    return paired
+
+def score(paired, series, round):
+    pass
 
 @login_required
 def drop_pairing(request, *args, **kwargs):

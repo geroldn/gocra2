@@ -11,6 +11,8 @@ urlpatterns = [
          name='gocra-add-game'),
     path('wins_game/<int:r_id>/<str:color>/', views.wins_game,
          name='gocra-add-game'),
+    path('make_pairing/<int:current>/', views.make_pairing,
+         name='gocra-make-pairing'),
     path('drop_pairing/<int:current>/', views.drop_pairing,
          name='gocra-drop-pairing'),
     path('series_all/', views.SeriesListView.as_view(), name='gocra-series-list'),

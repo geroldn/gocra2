@@ -51,12 +51,11 @@ class Participant(models.Model):
     new_rank = models.CharField(max_length=10, default='')
 
     @property
-    def mm_score(self):
+    def initial_mm(self):
         #import pdb; pdb.set_trace()
         rank = Rank(self.rank)
         round_rating = rank.round_rating()
-        mm_start = 14.0 + round_rating/100
-        return mm_start + self.wins
+        return 14.0 + round_rating/100
 
     def setNr(self, nr):
         self.nr = nr
@@ -91,6 +90,7 @@ class Result(models.Model):
 
     @property
     def pr_string(self):
+        pr_string = ''
         if self.color in ('B', 'W') and self.win in ('+', '-', '?'):
             if self.win == '?':
                 pr_string = '?-?'
