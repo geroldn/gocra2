@@ -2,12 +2,27 @@
 
 {% block title %}Serie{% endblock %}
 {% block actions %}
+{% if series and user.is_authenticated %}
   <a class="btn btn-secondary" href="/round/{{ current }}">
   Indeling ronde {{ current }}
 </a>
+{% endif %}
+{% endblock %}
+{% block actions2 %}
+{% if series and user_in_series %}
+<a class="btn btn-secondary" href="/toggle_playing_user/{{ series.first.pk }}/{{ user.pk }}">
+  {% if user_playing %}
+    Ik doe niet mee! 
+  {% else %}
+    Ik doe mee! 
+  {% endif %}
+</a>
+{% endif %}
 {% endblock %}
 
 {% block content %}
+
+{% if series %}
 
 {% regroup series_results by participant as p_list %}
 <table class="table table-bordered table-striped table-sm">
@@ -16,13 +31,13 @@
       <th scope="col">{{ series.first.name }}</th>
       <th </th>
       {% for round in rounds %}
-	{% if round.round == current %}
+	{% if round.round != current and club_admin %}
 	    <th scope="col" class="text-center" colspan="2">
-		  {{ round.name }}
+		<a href="/series_set_round/{{ round.round }}"> {{ round.name }} </a>
 	    </th>
 	{% else %}
 	    <th scope="col" class="text-center" colspan="2">
-		<a href="/series_set_round/{{ round.round }}"> {{ round.name }} </a>
+		  {{ round.name }}
 	    </th>
 	{% endif %}
       {% endfor %}
@@ -31,7 +46,7 @@
 	  <th> </th>
     </tr>
     <tr>
-      <th </th>
+        <th> </th>
 	  <th scope="col" class="text-center"> MM </th>
       {% for round in rounds %}
 	    <th scope="col" class="text-center">
@@ -75,14 +90,20 @@
             {{ r.r_string }}
         {% elif r.round == current %}
             {% if r.color == None %}
-            {% if r.playing %}
-                <a href="/result_toggle_playing/{{ r.pk }}"
-                    class="bg-danger text-white ">- ? -</a>
+              {% if club_admin %}
+                {% if r.playing %}
+                    <a href="/result_toggle_playing/{{ r.pk }}"
+                        class="bg-danger text-white ">- ? -</a>
+                {% else %}
+                    <a href="/result_toggle_playing/{{ r.pk }}">o</a>
+                {% endif %}
+              {% else %}
+                {% if r.playing and user.is_authenticated %}
+                    <div class="bg-danger text-white ">- ? -</div>
+                {% endif %}
+              {% endif %}
             {% else %}
-                <a href="/result_toggle_playing/{{ r.pk }}">o</a>
-            {% endif %}
-            {% else %}
-            {{ r.r_string }}
+                {{ r.r_string }}
             {% endif %}
         {% endif %}
       </td>
@@ -125,4 +146,9 @@
   </tbody>
 </table>
 
+{% else %}
+
+<h1> NO DATA </h1>
+    
+{% endif %}
 {% endblock %}

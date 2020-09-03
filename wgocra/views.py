@@ -2,6 +2,7 @@
 # Create your views here.
 #import logging
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import models as auth_models
 from django.utils.decorators import method_decorator
 from django.db.models import Exists, OuterRef
 from django.shortcuts import render, reverse
@@ -75,29 +76,56 @@ class SeriesDetailView(TemplateView):
     def get_context_data(self, **kwargs):
         #import pdb; pdb.set_trace()
         context = super().get_context_data(**kwargs)
-        series_list = Series.objects.filter(seriesIsOpen=True)
-        context['series'] = series_list
-        series = series_list[0]
-        current_round_number = series.currentRoundNumber
-        # calculate the ratings:
-        participants = Participant.objects.filter(series=series)
-        self.calculate_rating(participants)
-        self.rank_participants(participants, series)
-        series_results = Result.objects.filter(
-            participant__series=series
-        ).order_by('participant__nr', 'round')
-        context['series_results'] = series_results
-        # create round headings for rendering:
-        rounds = []
-        if series:
+        user = self.request.user
+        context['series'] = [] #returns length 0 in template if none
+        if user.is_authenticated:
+            user_participant = Participant.objects.filter(
+                series=OuterRef('pk')
+            ).filter(player__account=user)
+            series_l = Series.objects.filter(
+                Exists(user_participant)
+            ).filter(
+                seriesIsOpen=True
+            )
+        else:
+            series_l = Series.objects.filter(seriesIsOpen=True)
+        if series_l:
+            context['series'] = series_l
+            series = series_l[0]
+            current_round_number = series.currentRoundNumber
+            # calculate the ratings:
+            participants = Participant.objects.filter(series=series)
+            self.calculate_rating(participants)
+            self.rank_participants(participants, series)
+            series_results = Result.objects.filter(
+                participant__series=series
+            ).order_by('participant__nr', 'round')
+            context['series_results'] = series_results
+            is_user_in_series = False
+            is_user_playing = False
+            for result in series_results:
+                if result.round == current_round_number \
+                and result.participant.player.account == user:
+                    is_user_in_series = True
+                    if result.playing:
+                       is_user_playing = True
+            context['user_playing'] = is_user_playing
+            context['user_in_series'] = is_user_in_series
+            # create round headings for rendering:
+            rounds = []
             nrounds = series.numberOfRounds
             for n_round in range(nrounds):
                 rounds.append({
                     'round': n_round+1,
                     'name': 'Ronde {:d}'.format(n_round+1)
                 })
-        context['rounds'] = rounds
-        context['current'] = current_round_number
+            context['rounds'] = rounds
+            context['current'] = current_round_number
+            context['club_admin'] = (
+                user in auth_models.User.objects.filter(
+                    admin_for=series.club
+                )
+            )
         return context
 
     def calculate_rating(self, participants):
@@ -234,6 +262,24 @@ def series_open(request, *args, **kwargs):
         series.seriesIsOpen = True
         series.save()
     return HttpResponseRedirect(reverse('gocra-series-list'))
+
+@login_required
+def toggle_playing_user(request, *args, **kwargs):
+    """ Toggle round result as playing for player """
+    user_id = kwargs['uid']
+    series_id = kwargs['sid']
+    series = Series.objects.get(id=series_id)
+    qs1 = Result.objects.filter(
+        participant__series__id=series_id
+    ).filter(
+        round=series.currentRoundNumber
+    ).filter(
+        participant__player__account__id=user_id
+    )
+    for result in qs1:
+        result.playing = not result.playing
+        result.save()
+    return HttpResponseRedirect(reverse('gocra-series'))
 
 @login_required
 def result_toggle_playing(request, *args, **kwargs):

@@ -9,6 +9,8 @@ class Club(models.Model):
     """ Club in the system """
     name = models.CharField(max_length=200)
     city = models.CharField(max_length=200)
+    admin = models.ManyToManyField(
+        auth_models.User, blank=True, related_name='admin_for')
 
     def __str__(self):
         return self.name
@@ -17,9 +19,9 @@ class Player(models.Model):
     """ Player in the system """
     first_name = models.CharField(max_length=200)
     last_name = models.CharField(max_length=200)
-    egd_pin = models.CharField(max_length=10, null=True)
+    egd_pin = models.CharField(max_length=10, blank=True, null=True)
     reg_date = models.DateTimeField('date registered')
-    club = models.ForeignKey(Club, blank=True, null=True, on_delete=models.SET_NULL)
+    club = models.ManyToManyField(Club, blank=True)
     account = models.ForeignKey(auth_models.User, blank=True, null=True, on_delete=models.SET_NULL)
 
     def __str__(self):
@@ -28,11 +30,16 @@ class Player(models.Model):
 class Series(models.Model):
     """ Series; Has participants and results """
     name = models.CharField(max_length=200)
+    club = models.ForeignKey(Club, blank=True, null=True,
+                             on_delete=models.SET_NULL)
     numberOfRounds = models.IntegerField()
     currentRoundNumber = models.IntegerField()
     takeCurrentRoundInAccount = models.BooleanField()
     seriesIsOpen = models.BooleanField()
     version = models.IntegerField()
+
+    def __str__(self):
+        return self.name + ' (' + '{}'.format(self.version) + ')'
 
 class Participant(models.Model):
     """ Participant in a Series """
