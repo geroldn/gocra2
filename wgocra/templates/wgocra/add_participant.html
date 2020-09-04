@@ -1,0 +1,16 @@
+{% extends "wgocra/base_dialog.html" %}
+
+{% block title %}
+  Add Participant
+{% endblock %}
+
+{% block content %}
+
+<form action="/add_participant/{{ series.id }}/" method="post">
+   {% csrf_token %}
+   {{ form.as_p }}
+     <input type="submit" value="Submit">
+     <a href="/series"> Cancel </a>
+</form>
+
+{% endblock %}

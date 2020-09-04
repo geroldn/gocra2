@@ -9,7 +9,7 @@ from django.shortcuts import render, reverse
 from django.http import HttpResponseRedirect
 from django.views.generic import ListView, TemplateView
 from .models import Club, Player, Series, Participant, Result
-from .forms import UploadFileForm
+from .forms import UploadFileForm, AddParticipantForm
 from .helpers import ExternalMacMahon, get_handicap
 from .ratingsystem import RatingSystem as Rsys
 
@@ -43,6 +43,8 @@ class RoundDetailView(TemplateView):
             context['round_results'] = round_results
             not_paired = get_not_paired(series, current)
             context['not_paired'] = not_paired
+            context['club_admin'] = is_club_admin(self.request.user,
+                                                  series.club)
             return context
         return None
 
@@ -121,11 +123,7 @@ class SeriesDetailView(TemplateView):
                 })
             context['rounds'] = rounds
             context['current'] = current_round_number
-            context['club_admin'] = (
-                user in auth_models.User.objects.filter(
-                    admin_for=series.club
-                )
-            )
+            context['club_admin'] = is_club_admin(user, series.club)
         return context
 
     def calculate_rating(self, participants):
@@ -210,6 +208,60 @@ class PlayerListView(ListView):
     model = Player
     template_name = 'wgocra/player_list.html'
 
+def is_club_admin(user, club):
+    return (
+        user in auth_models.User.objects.filter(
+            admin_for=club
+        )
+    )
+
+def del_participant(request, *args, **kwargs):
+    series = Series.objects.get(pk=kwargs['sid'])
+    participant = Participant.objects.get(pk=kwargs['pid'])
+    if is_club_admin(request.user, series.club):
+        Result.objects.filter(
+            participant__series=series
+        ).filter(
+            participant=participant
+        ).delete()
+    participant.delete()
+    return HttpResponseRedirect(reverse('gocra-series'))
+
+def add_participant(request, *args, **kwargs):
+    series = Series.objects.get(pk=kwargs['id'])
+    if is_club_admin(request.user, series.club):
+        if request.method == 'POST':
+            form = AddParticipantForm(request.POST)
+            if form.is_valid():
+                participant = Participant()
+                participant.series = series
+                participant.rank = form.cleaned_data['rank']
+                participant.rating = form.cleaned_data['rating']
+                participant.player = form.cleaned_data['player']
+                participant.save()
+                for round in range(series.numberOfRounds):
+                    result = Result()
+                    result.series = series
+                    result.participant = participant
+                    result.round = round + 1
+                    result.save()
+                return HttpResponseRedirect(reverse('gocra-series'))
+        else:
+            form = AddParticipantForm()
+            players = Player.objects.filter(
+                ~Exists(Participant.objects.filter(
+                    player=OuterRef('pk'),
+                    series=series
+                )),
+                club=series.club,
+            )
+            form.fields['player'].queryset = players
+        return render(request,
+                      'wgocra/add_participant.html',
+                      {'form':form, 'series':series})
+    else:
+        return HttpResponseRedirect(reverse('gocra-series'))
+
 @login_required
 def upload_macmahon(request):
     """ Import macmahon file from local """
@@ -266,15 +318,15 @@ def series_open(request, *args, **kwargs):
 @login_required
 def toggle_playing_user(request, *args, **kwargs):
     """ Toggle round result as playing for player """
-    user_id = kwargs['uid']
     series_id = kwargs['sid']
     series = Series.objects.get(id=series_id)
+    user = request.user
     qs1 = Result.objects.filter(
         participant__series__id=series_id
     ).filter(
         round=series.currentRoundNumber
     ).filter(
-        participant__player__account__id=user_id
+        participant__player__account=user
     )
     for result in qs1:
         result.playing = not result.playing

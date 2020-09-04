@@ -7,12 +7,14 @@
   </a>
 {% endblock %}
 {% block actions2 %}
-  <a class="btn btn-secondary" href="/drop_pairing/{{ current }}/">
-  Verwijder indeling
-  </a>
-  <a class="btn btn-secondary" href="/make_pairing/{{ current }}/">
-  Maak indeling
-  </a>
+  {% if club_admin %}
+    <a class="btn btn-secondary" href="/drop_pairing/{{ current }}/">
+    Verwijder indeling
+    </a>
+    <a class="btn btn-secondary" href="/make_pairing/{{ current }}/">
+    Maak indeling
+    </a>
+  {% endif %}
 {% endblock %}
 
 {% block content %}
@@ -48,10 +50,14 @@
                         {{ r.komi }}
                     </td>
                     <td>
+                      {% if club_admin %}
                         <a href="/wins_game/{{ r.id }}/B/">o</a>
+                      {% endif %}
                         {{ r.pr_string }}
+                      {% if club_admin %}
                         <a href="/wins_game/{{ r.id }}/W/">o</a>
                         <a href="/wins_game/{{ r.id }}/X/">x</a>
+                      {% endif %}
                     </td>
                 </tr>
                 {% empty %}
@@ -71,7 +77,9 @@
                 {% for p in not_paired %}
                 <tr>
                     <td>
+                      {% if club_admin %}
                         <a href="/add_game/{{ p.id }}/{{ current }}/">o</a>
+                      {% endif %}
                         {{ p.player.first_name }}
                         {{ p.player.last_name }}
                     </td>

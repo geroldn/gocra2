@@ -10,7 +10,7 @@
 {% endblock %}
 {% block actions2 %}
 {% if series and user_in_series %}
-<a class="btn btn-secondary" href="/toggle_playing_user/{{ series.first.pk }}/{{ user.pk }}">
+<a class="btn btn-secondary" href="/toggle_playing_user/{{ series.first.pk }}">
   {% if user_playing %}
     Ik doe niet mee! 
   {% else %}
@@ -29,7 +29,8 @@
   <thead>
     <tr>
       <th scope="col">{{ series.first.name }}</th>
-      <th </th>
+      <th> </th>
+      <th> </th>
       {% for round in rounds %}
 	{% if round.round != current and club_admin %}
 	    <th scope="col" class="text-center" colspan="2">
@@ -46,7 +47,12 @@
 	  <th> </th>
     </tr>
     <tr>
-        <th> </th>
+      <th>
+        {% if club_admin %}
+          <a href="/add_participant/{{ series.first.id }}"> + </a>
+        {% endif %}
+      </th>
+      <th scope="col" class="text-center">del</th>
 	  <th scope="col" class="text-center"> MM </th>
       {% for round in rounds %}
 	    <th scope="col" class="text-center">
@@ -80,6 +86,13 @@
         {{ p.grouper.player.first_name }}
         {{ p.grouper.player.last_name }}
         ({{ p.grouper.rank }})
+      </td>
+      <td class="text-center">
+        {% if p.grouper.games == 0 %}
+          {% if club_admin %}
+          <a href="/del_participant/{{p.grouper.id}}/{{ series.first.id }}"> x </a>
+          {% endif %}
+        {% endif %}
       </td>
       <td class="text-center">
         {{ p.grouper.score|floatformat }}

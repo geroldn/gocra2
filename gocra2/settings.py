@@ -137,8 +137,10 @@ django_heroku.settings(locals())
 LOGIN_REDIRECT_URL = '/'
 
 # SMTP relay settings
-EMAIL_HOST = 'smtp.gmail.com'
-DEFAULT_FROM_EMAIL = 'no-reply@nicolasen.com'
-EMAIL_HOST_USER = 'gerold@nicolasen.com'
-EMAIL_HOST_PASSWORD = 'obgqmtdslmqlocbc'
+SECRET_KEY = os.environ['DJANGO_SECRET']
+
+EMAIL_HOST = os.environ['EMAIL_HOST']
+DEFAULT_FROM_EMAIL = os.environ['DEFAULT_FROM_EMAIL']
+EMAIL_HOST_USER = os.environ['EMAIL_HOST_USER']
+EMAIL_HOST_PASSWORD = os.environ['EMAIL_HOST_PASSWORD']
 EMAIL_USE_TLS = True

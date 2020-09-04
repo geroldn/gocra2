@@ -45,7 +45,7 @@ class Participant(models.Model):
     """ Participant in a Series """
     rank = models.CharField(max_length=10)
     rating = models.IntegerField()
-    mm_id = models.IntegerField()
+    mm_id = models.IntegerField(null=True)
     series = models.ForeignKey(Series, blank=True, null=True, on_delete=models.CASCADE)
     player = models.ForeignKey(Player, blank=True, null=True, on_delete=models.CASCADE)
     nr = models.IntegerField(default=0)
@@ -56,6 +56,14 @@ class Participant(models.Model):
     score = models.FloatField(null=True, default=0)
     points_str = models.CharField(max_length=10, default='')
     new_rank = models.CharField(max_length=10, default='')
+
+    def __str__(self):
+        return '{:s} {:s} {:s} {:.0f}'.format(
+            self.player.first_name,
+            self.player.last_name,
+            self.rank,
+            self.rating
+        )
 
     @property
     def initial_mm(self):
@@ -83,6 +91,14 @@ class Result(models.Model):
     win = models.CharField(max_length=4, null=True)
     gain = models.FloatField(null=True, default=0.0)
     #r_string = models.CharField(max_length=10, null=True, default='')
+
+    def __str__(self):
+        return '{:s}({:d}) {:s} {:s}'.format(
+            self.participant.series.name,
+            self.round,
+            self.participant.player.first_name,
+            self.participant.player.last_name,
+        )
 
     @property
     def r_string(self):
