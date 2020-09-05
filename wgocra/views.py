@@ -11,6 +11,7 @@ from django.views.generic import ListView, TemplateView
 from .models import Club, Player, Series, Participant, Result
 from .forms import UploadFileForm, AddParticipantForm
 from .helpers import ExternalMacMahon, get_handicap
+from .helpers import rank2rating, rating2rank
 from .ratingsystem import RatingSystem as Rsys
 
 #logging.basicConfig(filename='log/gocra.log', level=logging.DEBUG)
@@ -133,7 +134,7 @@ class SeriesDetailView(TemplateView):
         #import pdb; pdb.set_trace()
         for participant in participants:
             participant.resultrating = participant.rating
-            participant.gain = 0
+            participant.gain = 0.0
             participant.games = 0
             participant.wins = 0
             participant.score = 0.0 + participant.initial_mm
@@ -141,7 +142,7 @@ class SeriesDetailView(TemplateView):
             results = Result.objects.filter(
                 participant=participant).order_by('round')
             for result in results:
-                result.gain = 0
+                result.gain = 0.0
                 if result.round <= participant.series.currentRoundNumber:
                     if result.color in ('B', 'W'):
                         if result.win in ('+', '-'):
@@ -168,6 +169,12 @@ class SeriesDetailView(TemplateView):
             if participant.gain < -100:
                 participant.gain = -100
                 participant.resultrating = participant.rating - 100
+            if participant.resultrating >= rank2rating(participant.rank) + 100:
+                participant.new_rank = rating2rank(
+                    rank2rating(participant.rank) + 100)
+            if participant.resultrating < rank2rating(participant.rank) - 100:
+                participant.new_rank = rating2rank(
+                    rank2rating(participant.rank) - 100)
             participant.save()
 
     def rank_participants(self, participants, series):

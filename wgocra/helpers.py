@@ -1,11 +1,29 @@
 """ Diverse classes not ORM """
 from datetime import datetime
 import xmltodict
-from gocra.gocra import Rank
+import re
 from .models import Series, Participant, Player, Result
 
 def get_handicap(mm_b, mm_w):
     return int((mm_w - mm_b) // 1)
+
+def rank2rating(rank):
+    rating = None
+    dk_char = re.split("[0-9]+", rank)[1]
+    r_num = int(re.split(dk_char, rank)[0])
+    if dk_char == 'd':
+        rating = 2000 + r_num * 100
+    if dk_char == 'k':
+        rating = 2100 - r_num * 100
+    return rating
+
+def rating2rank(rating):
+    n_value = int(round(rating / 100, 0))
+    if n_value > 20:
+        rank = '{:d}d'.format(n_value - 20)
+    else:
+        rank = '{:d}k'.format(21 - n_value)
+    return rank
 
 class ExternalMacMahon:
     """ Representation of external macmahon xml file (Gerlach) """
