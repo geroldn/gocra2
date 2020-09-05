@@ -9,7 +9,7 @@
 {% endif %}
 {% endblock %}
 {% block actions2 %}
-{% if series and user_in_series %}
+{% if series and user_in_series and not user_paired %}
 <a class="btn btn-secondary" href="/toggle_playing_user/{{ series.first.pk }}">
   {% if user_playing %}
     Ik doe niet mee! 

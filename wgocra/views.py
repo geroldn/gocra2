@@ -8,6 +8,7 @@ from django.db.models import Exists, OuterRef
 from django.shortcuts import render, reverse
 from django.http import HttpResponseRedirect
 from django.views.generic import ListView, TemplateView
+from random import randrange
 from .models import Club, Player, Series, Participant, Result
 from .forms import UploadFileForm, AddParticipantForm
 from .helpers import ExternalMacMahon, get_handicap
@@ -106,13 +107,17 @@ class SeriesDetailView(TemplateView):
             context['series_results'] = series_results
             is_user_in_series = False
             is_user_playing = False
+            is_user_paired = False
             for result in series_results:
                 if result.round == current_round_number \
                 and result.participant.player.account == user:
                     is_user_in_series = True
                     if result.playing:
-                       is_user_playing = True
+                        is_user_playing = True
+                    if result.opponent:
+                        is_user_paired = True
             context['user_playing'] = is_user_playing
+            context['user_paired'] = is_user_paired
             context['user_in_series'] = is_user_in_series
             # create round headings for rendering:
             rounds = []
@@ -272,16 +277,20 @@ def add_participant(request, *args, **kwargs):
 @login_required
 def upload_macmahon(request):
     """ Import macmahon file from local """
-    if request.method == 'POST':
-        form = UploadFileForm(request.POST, request.FILES)
-        if form.is_valid():
-            macmahon = ExternalMacMahon()
-            series_id = macmahon.xml_import(request.FILES['file'])
-            request.session['series_qs'] = series_id
-            return HttpResponseRedirect(reverse('gocra-series-list'))
-    else:
-        form = UploadFileForm()
-    return render(request, 'wgocra/upload.html', {'form': form})
+    club_l = Club.objects.filter(admin=request.user)
+    if club_l:
+        club = club_l[0]
+        if request.method == 'POST':
+            form = UploadFileForm(request.POST, request.FILES)
+            if form.is_valid():
+                macmahon = ExternalMacMahon()
+                series_id = macmahon.xml_import(request.FILES['file'], club)
+                request.session['series_qs'] = series_id
+                return HttpResponseRedirect(reverse('gocra-series-list'))
+        else:
+            form = UploadFileForm()
+        return render(request, 'wgocra/upload.html', {'form': form})
+    return HttpResponseRedirect(reverse('gocra-series-list'))
 
 @login_required
 def series_set_round(request, *args, **kwargs):
@@ -399,8 +408,14 @@ def add_game(request, *args, **kwargs):
             half_game.color = 'W'
             new_game.color = 'B'
         handicap = get_handicap(p_black.score, p_white.score)
+        if handicap == 0:
+            komi = 6.5
+        else:
+            komi = 0.5
         new_game.handicap = handicap
+        new_game.komi = komi
         half_game.handicap = handicap
+        half_game.komi = komi
         new_game.win = '?'
         half_game.win = '?'
         new_game.save()
@@ -413,31 +428,113 @@ def add_game(request, *args, **kwargs):
     return HttpResponseRedirect('/round/{:d}'.format(current))
 
 @login_required
+def del_game(request, *args, **kwargs):
+    result_id = kwargs['r_id']
+    result1 = Result.objects.get(id=result_id)
+    result2 = Result.objects.get(round=result1.round,
+                                 participant=result1.opponent)
+    for result in (result1, result2):
+        result.opponent = None
+        result.win = None
+        result.color = None
+        result.save()
+    return HttpResponseRedirect('/round/{:d}'.format(result1.round))
+
+@login_required
 def make_pairing(request, *args, **kwargs):
     current = kwargs['current']
     series_l = Series.objects.filter(seriesIsOpen=True)
-    if series:
+    if series_l:
         series = series_l[0]
         to_pair = get_not_paired(series, current)
-        to_pair_ids = []
-        for p in to_pair:
-            to_pair_ids.append(p.id)
-        paired = pair(to_pair_ids, series, current)
+        paired = pair(to_pair, series, current)
+        for game in paired['games']:
+            if game[0].score < game[1].score:
+                p_black = game[0]
+                p_white = game[1]
+            elif game[1].score < game[0].score:
+                p_black = game[1]
+                p_white = game[0]
+            elif game[1].score == game[0].score:
+                random = randrange(1)
+                if random == 1:
+                    p_black = game[0]
+                    p_white = game[1]
+                else:
+                    p_black = game[1]
+                    p_white = game[0]
+            res_b = Result.objects.get(
+                participant=p_black,
+                round=current)
+            res_w = Result.objects.get(
+                participant=p_white,
+                round=current)
+            handicap = get_handicap(p_black.score,  p_white.score)
+            if handicap == 0:
+                komi = 6.5
+            else:
+                komi = 0.5
+            res_b.color = 'B'
+            res_b.opponent = p_white
+            res_b.win = '?'
+            res_b.handicap = handicap
+            res_b.komi = komi
+            res_b.save()
+            res_w.color = 'W'
+            res_w.opponent = p_black
+            res_w.win = '?'
+            res_w.handicap = handicap
+            res_w.komi = komi
+            res_w.save()
     return HttpResponseRedirect('/round/{:d}'.format(current))
 
 def pair(to_pair, series, round):
+    #import pdb; pdb.set_trace()
     paired = {}
-    paired['score'] = 0
-    paired['pairing'] = []
-    if len(to_pair) == 2:
-        paired['pairing'].append((to_pair[0], to_pair[1]))
-        score(paired, series, round)
-    if len(to_pair) > 2:
-        _score = 1000000
+    tries = []
+    for player1 in to_pair:
+        for player2 in to_pair:
+            if player2.id > player1.id:
+                score = get_score(player1, player2, series, round)
+                tries.append({'score':score, 'p1':player1, 'p2':player2})
+    tries.sort(key=lambda t: t['score'])
+    if len(to_pair) < 4:
+        paired['score'] = tries[0]['score']
+        paired['games'] = []
+        paired['games'].append((tries[0]['p1'], tries[0]['p2']))
+    else:
+        cur_score = 1E8
+        for game in tries:
+            if game['score'] < cur_score:
+                sub_to_pair = [
+                    p for p in to_pair \
+                    if p != game['p1'] and p != game['p2']
+                ]
+                sub_paired = pair(sub_to_pair, series, round)
+                new_score = game['score'] + sub_paired['score']
+                if new_score < cur_score:
+                    cur_score = new_score
+                    paired['score'] = new_score
+                    paired['games'] = [(game['p1'], game['p2'])]
+                    paired['games'].extend(sub_paired['games'])
     return paired
 
-def score(paired, series, round):
-    pass
+def get_score(player1, player2, series, round):
+    encounters = Result.objects.filter(
+        participant__series=series,
+        round__lt=round,
+        participant=player1,
+        opponent=player2,
+    ).count() + Result.objects.filter(
+        participant__series=series,
+        round__lt=round,
+        participant=player2,
+        opponent=player1,
+    ).count()
+    score = encounters * 1E6
+    score_diff = abs(player1.score - player2.score)
+    score += score_diff * 1E4
+    return score
 
 @login_required
 def drop_pairing(request, *args, **kwargs):

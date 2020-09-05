@@ -2,6 +2,7 @@
 from datetime import datetime
 import xmltodict
 import re
+from django.contrib.auth import models as auth_models
 from .models import Series, Participant, Player, Result
 
 def get_handicap(mm_b, mm_w):
@@ -35,7 +36,7 @@ class ExternalMacMahon:
         self.doc = xmltodict.parse(file.read())
         return self.doc
 
-    def xml_import(self, memfile):
+    def xml_import(self, memfile, club):
         """ Concert dictionary into (ORM) objects """
         self.s_import(memfile)
         name = self.doc['Tournament']['Name']
@@ -46,6 +47,7 @@ class ExternalMacMahon:
             new_version = 0
         series = Series()
         self.series = series
+        series.club = club
         series.name = name
         series.version = new_version
         series.numberOfRounds = int(self.doc['Tournament']['NumberOfRounds'])
@@ -85,31 +87,54 @@ class ExternalMacMahon:
         if participant['PreliminaryRegistration'] == 'false':
             fname = participant['GoPlayer']['FirstName']
             lname = participant['GoPlayer']['Surname']
-            qset = Player.objects.filter(
-                first_name=fname
-            ).filter(
-                last_name=lname
-            )
-            if qset.count() > 0:
-                player = qset[0]
-            else:
-                player = Player()
-                player.first_name = fname
-                player.last_name = lname
-                player.reg_date = datetime.now()
-                player.save()
+
             spart = Participant()
+            spart.player = self.get_player(fname, lname)
             rank = participant['GoPlayer']['GoLevel']
             spart.rank = rank
             rating = int(participant['GoPlayer']['Rating'])
             if rating == 0:
-                rating = spart.init_rank.round_rating()
+                rating = rank2rating(rank)
             spart.rating = rating
             spart.mm_id = int(participant['Id'])
             spart.series = series
-            spart.player = player
             spart.save()
             series.participants.append(spart)
+
+    def get_player(self, fname, lname):
+        qset = Player.objects.filter(
+            first_name=fname
+        ).filter(
+            last_name=lname
+        )
+        if qset.count() > 0:
+            player = qset[0]
+            if not player.account:
+                player.account = self.get_account(player)
+                player.save()
+        else:
+            player = Player()
+            player.first_name = fname
+            player.last_name = lname
+            player.reg_date = datetime.now()
+            player.account = self.get_account(player)
+            player.save()
+        return player
+
+    def get_account(self, player):
+        #import pdb; pdb.set_trace()
+        username = re.split("_", player.first_name)[0].lower() + \
+                player.last_name[:1].lower()
+        qset = auth_models.User.objects.filter(
+            username=username
+        )
+        if qset:
+            return qset[0]
+        else:
+            user = auth_models.User()
+            user.username = username
+            user.save()
+            return user
 
     def reg_result(self, series, n_participant, n_round):
         """ Get result info from macmahon structure """
