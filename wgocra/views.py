@@ -430,15 +430,21 @@ def add_game(request, *args, **kwargs):
 @login_required
 def del_game(request, *args, **kwargs):
     result_id = kwargs['r_id']
-    result1 = Result.objects.get(id=result_id)
-    result2 = Result.objects.get(round=result1.round,
-                                 participant=result1.opponent)
-    for result in (result1, result2):
+    result = Result.objects.get(id=result_id)
+    result2_l = Result.objects.filter(round=result.round,
+                                 participant=result.opponent)
+    result.opponent = None
+    result.win = None
+    result.color = None
+    result.save()
+    round = result.round
+    if result2_l:
+        result = result2_l[0]
         result.opponent = None
         result.win = None
         result.color = None
         result.save()
-    return HttpResponseRedirect('/round/{:d}'.format(result1.round))
+    return HttpResponseRedirect('/round/{:d}'.format(round))
 
 @login_required
 def make_pairing(request, *args, **kwargs):
@@ -447,6 +453,7 @@ def make_pairing(request, *args, **kwargs):
     if series_l:
         series = series_l[0]
         to_pair = get_not_paired(series, current)
+        #import pdb; pdb.set_trace()
         paired = pair(to_pair, series, current)
         for game in paired['games']:
             if game[0].score < game[1].score:
@@ -489,14 +496,12 @@ def make_pairing(request, *args, **kwargs):
     return HttpResponseRedirect('/round/{:d}'.format(current))
 
 def pair(to_pair, series, round):
-    #import pdb; pdb.set_trace()
     paired = {}
     tries = []
-    for player1 in to_pair:
-        for player2 in to_pair:
-            if player2.id > player1.id:
-                score = get_score(player1, player2, series, round)
-                tries.append({'score':score, 'p1':player1, 'p2':player2})
+    player1 = to_pair[0]
+    for player2 in to_pair[1:]:
+        score = get_score(player1, player2, series, round)
+        tries.append({'score':score, 'p1':player1, 'p2':player2})
     tries.sort(key=lambda t: t['score'])
     if len(to_pair) < 4:
         paired['score'] = tries[0]['score']
@@ -504,6 +509,8 @@ def pair(to_pair, series, round):
         paired['games'].append((tries[0]['p1'], tries[0]['p2']))
     else:
         cur_score = 1E8
+        paired['score'] = cur_score
+        paired['games'] = []
         for game in tries:
             if game['score'] < cur_score:
                 sub_to_pair = [
@@ -515,7 +522,7 @@ def pair(to_pair, series, round):
                 if new_score < cur_score:
                     cur_score = new_score
                     paired['score'] = new_score
-                    paired['games'] = [(game['p1'], game['p2'])]
+                    paired['games'].append((game['p1'], game['p2']))
                     paired['games'].extend(sub_paired['games'])
     return paired
 
