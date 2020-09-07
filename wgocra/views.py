@@ -453,23 +453,34 @@ def make_pairing(request, *args, **kwargs):
     if series_l:
         series = series_l[0]
         to_pair = get_not_paired(series, current)
+        to_pair_sm = []
         #import pdb; pdb.set_trace()
-        paired = pair(to_pair, series, current)
+        for player in to_pair:
+            player_sm = {}
+            player_sm['id'] = player.id
+            player_sm['score'] = player.score
+            player_sm['ops'] = []
+            result_l = Result.objects.filter(participant=player)
+            for result in result_l:
+                if result.opponent:
+                    player_sm['ops'].append(result.opponent.id)
+            to_pair_sm.append(player_sm)
+        paired = pair(to_pair_sm, series, current)
         for game in paired['games']:
-            if game[0].score < game[1].score:
-                p_black = game[0]
-                p_white = game[1]
-            elif game[1].score < game[0].score:
-                p_black = game[1]
-                p_white = game[0]
-            elif game[1].score == game[0].score:
+            if game[0]['score'] < game[1]['score']:
+                p_black = Participant.objects.get(id=game[0]['id'])
+                p_white = Participant.objects.get(id=game[1]['id'])
+            elif game[1]['score'] < game[0]['score']:
+                p_black = Participant.objects.get(id=game[1]['id'])
+                p_white = Participant.objects.get(id=game[0]['id'])
+            elif game[1]['score'] == game[0]['score']:
                 random = randrange(1)
                 if random == 1:
-                    p_black = game[0]
-                    p_white = game[1]
+                    p_black = Participant.objects.get(id=game[0]['id'])
+                    p_white = Participant.objects.get(id=game[1]['id'])
                 else:
-                    p_black = game[1]
-                    p_white = game[0]
+                    p_black = Participant.objects.get(id=game[1]['id'])
+                    p_white = Participant.objects.get(id=game[0]['id'])
             res_b = Result.objects.get(
                 participant=p_black,
                 round=current)
@@ -527,20 +538,11 @@ def pair(to_pair, series, round):
     return paired
 
 def get_score(player1, player2, series, round):
-    encounters = Result.objects.filter(
-        participant__series=series,
-        round__lt=round,
-        participant=player1,
-        opponent=player2,
-    ).count() + Result.objects.filter(
-        participant__series=series,
-        round__lt=round,
-        participant=player2,
-        opponent=player1,
-    ).count()
-    score = encounters * 1E6
-    score_diff = abs(player1.score - player2.score)
-    score += score_diff * 1E4
+    #import pdb; pdb.set_trace()
+    encountered = player2['id'] in player1['ops']
+    score = encountered * 1E6
+    score_diff = abs(player1['score'] - player2['score'])
+    score += (score_diff ** 2) * 1E3
     return score
 
 @login_required
