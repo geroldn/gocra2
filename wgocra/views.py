@@ -22,7 +22,6 @@ def index(request):
     """ Render the gocra index page """
     return render(request, 'wgocra/index.html')
 
-@method_decorator(login_required, name='dispatch')
 class RoundDetailView(TemplateView):
     """
     Render Round as Result Details

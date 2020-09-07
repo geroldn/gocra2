@@ -2,11 +2,9 @@
 
 {% block title %}Serie{% endblock %}
 {% block actions %}
-{% if series and user.is_authenticated %}
   <a class="btn btn-secondary" href="/round/{{ current }}">
   Indeling ronde {{ current }}
 </a>
-{% endif %}
 {% endblock %}
 {% block actions2 %}
 {% if series and user_in_series and not user_paired %}
