@@ -188,7 +188,7 @@ class SeriesDetailView(TemplateView):
         for p_enum in enumerate(
                 sorted(
                     participants,
-                    key=lambda ptnt: (ptnt.wins, ptnt.gain, ptnt.rating),
+                    key=lambda ptnt: ((ptnt.games > 0), ptnt.wins, ptnt.gain, ptnt.rating),
                     reverse=True
                 ),
                 1 #start rank value
