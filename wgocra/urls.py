@@ -22,6 +22,8 @@ urlpatterns = [
          name='gocra-series-set_round'),
     path('series_open/<int:id>/', views.series_open, name='gocra-series-open'),
     path('series_delete/<int:id>/', views.series_delete, name='gocra-series-delete'),
+    path('user_result/<int:sid>/<int:win>/<int:round>/', views.user_result,
+         name='gocra-user-result'),
     path('toggle_playing_user/<int:sid>/', views.toggle_playing_user,
          name='gocra-result-toggle-playing'),
     path('result_toggle_playing/<int:id>/', views.result_toggle_playing,

@@ -29,16 +29,16 @@ class RoundDetailView(TemplateView):
     template_name = 'wgocra/round.html'
 
     def get_context_data(self, **kwargs):
-        #import pdb; pdb.set_trace()
         current = self.kwargs['current']
         context = super().get_context_data(**kwargs)
         series = Series.objects.get(seriesIsOpen=True)
+        context['series'] = series
+        user = self.request.user
         if series:
-            round_results = Result.objects.filter(
+            results = Result.objects.filter(
                 participant__series=series
-            ).filter(
-                round=current
-            ).filter(
+            ).filter(round=current)
+            round_results = results.filter(
                 color__in=['B', '?']
             ).order_by('participant__nr')
             context['round_results'] = round_results
@@ -46,6 +46,8 @@ class RoundDetailView(TemplateView):
             context['not_paired'] = not_paired
             context['club_admin'] = is_club_admin(self.request.user,
                                                   series.club)
+            #import pdb; pdb.set_trace()
+            add_user_playing_status(context, results, current, user)
             return context
         return None
 
@@ -77,7 +79,6 @@ class SeriesDetailView(TemplateView):
     #context_object_name = 'series_results'
 
     def get_context_data(self, **kwargs):
-        #import pdb; pdb.set_trace()
         context = super().get_context_data(**kwargs)
         user = self.request.user
         context['series'] = [] #returns length 0 in template if none
@@ -99,25 +100,22 @@ class SeriesDetailView(TemplateView):
             # calculate the ratings:
             participants = Participant.objects.filter(series=series)
             self.calculate_rating(participants)
-            self.rank_participants(participants, series)
+            playing_dict = {}
+            for participant in participants:
+                playing_dict['{:d}'.format(participant.id)] = \
+                Result.objects.get(participant=participant,
+                                   round=current_round_number
+                                  ).playing
+            self.rank_participants(participants, playing_dict, series)
             series_results = Result.objects.filter(
                 participant__series=series
             ).order_by('participant__nr', 'round')
             context['series_results'] = series_results
-            is_user_in_series = False
-            is_user_playing = False
-            is_user_paired = False
-            for result in series_results:
-                if result.round == current_round_number \
-                and result.participant.player.account == user:
-                    is_user_in_series = True
-                    if result.playing:
-                        is_user_playing = True
-                    if result.opponent:
-                        is_user_paired = True
-            context['user_playing'] = is_user_playing
-            context['user_paired'] = is_user_paired
-            context['user_in_series'] = is_user_in_series
+            #import pdb; pdb.set_trace()
+            add_user_playing_status(context,
+                                    series_results,
+                                    current_round_number,
+                                    user)
             # create round headings for rendering:
             rounds = []
             nrounds = series.numberOfRounds
@@ -181,14 +179,16 @@ class SeriesDetailView(TemplateView):
                     rank2rating(participant.rank) - 100)
             participant.save()
 
-    def rank_participants(self, participants, series):
+    def rank_participants(self, participants, playing, series):
         """
         Rank participants according to their results.
         """
         for p_enum in enumerate(
                 sorted(
                     participants,
-                    key=lambda ptnt: ((ptnt.games > 0), ptnt.wins, ptnt.gain, ptnt.rating),
+                    key=lambda ptnt: ((ptnt.games > 0),
+                                      playing['{:d}'.format(ptnt.id)],
+                                      ptnt.wins, ptnt.gain, ptnt.rating),
                     reverse=True
                 ),
                 1 #start rank value
@@ -197,6 +197,22 @@ class SeriesDetailView(TemplateView):
             participant.nr = p_enum[0]
             participant.save()
         results = Result.objects.filter(participant__series=series)
+
+def add_user_playing_status(context, results, current, user):
+    is_user_in_series = False
+    is_user_playing = False
+    is_user_paired = False
+    for result in results:
+        if result.round == current \
+        and result.participant.player.account == user:
+            is_user_in_series = True
+            if result.playing:
+                is_user_playing = True
+            if result.opponent:
+                is_user_paired = True
+    context['user_playing'] = is_user_playing
+    context['user_paired'] = is_user_paired
+    context['user_in_series'] = is_user_in_series
 
 @method_decorator(login_required, name='dispatch')
 class SeriesListView(ListView):
@@ -226,6 +242,33 @@ def is_club_admin(user, club):
         )
     )
 
+@login_required
+def user_result(request, *args,**kwargs):
+    series = Series.objects.get(pk=kwargs['sid'])
+    current = kwargs['round']
+    win = kwargs['win']
+    user = request.user
+    result = Result.objects.get(
+        participant__series = series,
+        participant__player__account=user,
+        round=current
+    )
+    result2 = Result.objects.get(
+        participant__series=series,
+        opponent__player__account=user,
+        round=current
+    )
+    if win:
+        result.win = '+'
+        result2.win  = '-'
+    else:
+        result.win = '-'
+        result2.win  = '+'
+    result.save()
+    result2.save()
+    return HttpResponseRedirect('/round/{:d}'.format(current))
+
+@login_required
 def del_participant(request, *args, **kwargs):
     series = Series.objects.get(pk=kwargs['sid'])
     participant = Participant.objects.get(pk=kwargs['pid'])
@@ -238,6 +281,7 @@ def del_participant(request, *args, **kwargs):
     participant.delete()
     return HttpResponseRedirect(reverse('gocra-series'))
 
+@login_required
 def add_participant(request, *args, **kwargs):
     series = Series.objects.get(pk=kwargs['id'])
     if is_club_admin(request.user, series.club):

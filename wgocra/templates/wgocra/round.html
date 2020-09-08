@@ -15,6 +15,18 @@
     Maak indeling
     </a>
   {% endif %}
+  {% if series and user_in_series and user_paired %}
+  <a class="btn btn-secondary" href="/user_result/{{ series.id }}/1/{{ current }}">
+    {% if user_playing %}
+      Gewonnen! 
+    {% endif %}
+  </a>
+  <a class="btn btn-secondary" href="/user_result/{{ series.id }}/0/{{ current }}">
+    {% if user_playing %}
+      Verloren! 
+    {% endif %}
+  </a>
+  {% endif %}
 {% endblock %}
 
 {% block content %}
