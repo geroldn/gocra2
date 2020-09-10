@@ -16,15 +16,24 @@ import django_heroku
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+DTAP_ENV = os.environ['GOCRA_ENV']
+print('Detected {:s} environment'.format(DTAP_ENV))
+
+# SECURITY WARNING: don't run with debug turned on in production!
+if DTAP_ENV == 'DEV':
+    print('Setting DEV settings')
+    SECURE_SSL_REDIRECT = False
+    DEBUG = True
+else:
+    # Redirect all HTTP to HTTPS
+    SECURE_SSL_REDIRECT = True
+    DEBUG = False
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ['DJANGO_SECRET']
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 
 ALLOWED_HOSTS = []
 
