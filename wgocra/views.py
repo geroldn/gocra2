@@ -187,8 +187,9 @@ class SeriesDetailView(TemplateView):
                 sorted(
                     participants,
                     key=lambda ptnt: ((ptnt.games > 0),
+                                      ptnt.wins, ptnt.gain,
                                       playing['{:d}'.format(ptnt.id)],
-                                      ptnt.wins, ptnt.gain, ptnt.rating),
+                                      ptnt.rating),
                     reverse=True
                 ),
                 1 #start rank value
