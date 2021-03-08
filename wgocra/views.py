@@ -8,7 +8,8 @@ from django.db.models import Exists, OuterRef
 from django.shortcuts import render, reverse
 from django.http import HttpResponseRedirect
 from django.views.generic import ListView, TemplateView
-from random import randrange
+from random import randrange, seed
+#from random import randrange, seed
 from .models import Club, Player, Series, Participant, Result
 from .forms import UploadFileForm, AddParticipantForm
 from .helpers import ExternalMacMahon, get_handicap
@@ -492,6 +493,7 @@ def del_game(request, *args, **kwargs):
 
 @login_required
 def make_pairing(request, *args, **kwargs):
+    seed()
     current = kwargs['current']
     series_l = Series.objects.filter(seriesIsOpen=True)
     if series_l:
@@ -551,6 +553,7 @@ def make_pairing(request, *args, **kwargs):
     return HttpResponseRedirect('/round/{:d}'.format(current))
 
 def pair(to_pair, series, round):
+    #import pdb; pdb.set_trace()
     paired = {}
     tries = []
     player1 = to_pair[0]
@@ -586,7 +589,7 @@ def get_score(player1, player2, series, round):
     encountered = player2['id'] in player1['ops']
     score = encountered * 1E6
     score_diff = abs(player1['score'] - player2['score'])
-    score += (score_diff ** 2) * 1E3
+    score += ((score_diff // series.diffCutoff) ** 2) * 1E3 + randrange(100)
     return score
 
 @login_required

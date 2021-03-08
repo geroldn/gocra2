@@ -35,6 +35,7 @@ class Series(models.Model):
     numberOfRounds = models.IntegerField()
     currentRoundNumber = models.IntegerField()
     takeCurrentRoundInAccount = models.BooleanField()
+    diffCutoff = models.IntegerField(default=1)
     seriesIsOpen = models.BooleanField()
     version = models.IntegerField()
 
