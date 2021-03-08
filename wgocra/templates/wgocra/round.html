@@ -56,7 +56,9 @@
                         {{ r.opponent.player.last_name }}
                     </td>
                     <td>
-                        {{ r.handicap }}
+			{% if r.handicap > 1 %}
+                       	    {{ r.handicap }}
+			{% endif %}
                     </td>
                     <td>
                         {{ r.komi }}
