@@ -504,12 +504,25 @@ def make_pairing(request, *args, **kwargs):
         for player in to_pair:
             player_sm = {}
             player_sm['id'] = player.id
+            player_sm['player_id'] = player.player_id
             player_sm['score'] = player.score
+            #opponents in this series
             player_sm['ops'] = []
             result_l = Result.objects.filter(participant=player)
             for result in result_l:
                 if result.opponent:
                     player_sm['ops'].append(result.opponent.id)
+            #recently played opponents over all series
+            recents = series.lastOpponents
+            playerPlayer = Player.objects.filter(id=player.player_id)[0]
+            player_sm['recentOps'] = []
+            result_l2 = Result.objects.filter(
+                participant__player=playerPlayer
+            ).filter(
+                opponent__isnull=False
+            ).order_by('-participant__series__startDate', '-round')[:recents]
+            for result in result_l2:
+                player_sm['recentOps'].append(result.opponent.player_id)
             to_pair_sm.append(player_sm)
         paired = pair(to_pair_sm, series, current)
         for game in paired['games']:
@@ -587,7 +600,8 @@ def pair(to_pair, series, round):
 def get_score(player1, player2, series, round):
     #import pdb; pdb.set_trace()
     encountered = player2['id'] in player1['ops']
-    score = encountered * 1E6
+    recent = player2['player_id'] in player1['recentOps']
+    score = (encountered + recent) * 1E6
     score_diff = abs(player1['score'] - player2['score'])
     score += ((score_diff // series.diffCutoff) ** 2) * 1E3 + randrange(100)
     return score
