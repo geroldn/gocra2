@@ -3,7 +3,7 @@
 from django.db import models
 from django.contrib.auth import models as auth_models
 from gocra.gocra import Rank
-from datetime import date
+from django.utils import timezone
 
 
 class Club(models.Model):
@@ -40,7 +40,7 @@ class Series(models.Model):
     lastOpponents = models.IntegerField(default=1)
     seriesIsOpen = models.BooleanField()
     version = models.IntegerField()
-    startDate = models.DateField(default=date.today())
+    startDate = models.DateField(default=timezone.now)
 
     def __str__(self):
         return self.name + ' (' + '{}'.format(self.version) + ')'
@@ -88,6 +88,7 @@ class Result(models.Model):
         Participant, null=True, blank=True, on_delete=models.CASCADE,
         related_name='opp_results')
     round = models.IntegerField()
+    game = models.IntegerField(default=1)
     playing = models.BooleanField(default=False)
     color = models.CharField(max_length=5, null=True)
     handicap = models.IntegerField(null=True)
