@@ -105,12 +105,13 @@ class SeriesDetailView(TemplateView):
             for participant in participants:
                 playing_dict['{:d}'.format(participant.id)] = \
                 Result.objects.get(participant=participant,
-                                   round=current_round_number
+                                   round=current_round_number,
+                                   game=1
                                   ).playing
             self.rank_participants(participants, playing_dict, series)
             series_results = Result.objects.filter(
                 participant__series=series
-            ).order_by('participant__nr', 'round')
+            ).order_by('participant__nr', 'round', 'game')
             context['series_results'] = series_results
             #import pdb; pdb.set_trace()
             add_user_playing_status(context,
@@ -301,6 +302,7 @@ def add_participant(request, *args, **kwargs):
                     result.series = series
                     result.participant = participant
                     result.round = round + 1
+                    result.game = 1
                     result.save()
                 return HttpResponseRedirect(reverse('gocra-series'))
         else:
@@ -411,8 +413,11 @@ def wins_game(request, *args, **kwargs):
     result_id = kwargs['r_id']
     result = Result.objects.get(id=result_id)
     current = result.round
-    result2 = Result.objects.get(participant=result.opponent,
+    result2 = result.opponent_result
+    if result2 == None:
+        result2 = Result.objects.get(participant=result.opponent,
                                  round=current)
+        result.opponent_result = result2
     if color == 'B':
         result.win = '+'
         result2.win = '-'
@@ -431,9 +436,24 @@ def add_game(request, *args, **kwargs):
     #import pdb; pdb.set_trace()
     current = kwargs['current']
     candidate = kwargs['p_id']
+    igame = kwargs['game']
     p_candidate = Participant.objects.get(id=candidate)
-    new_game = Result.objects.get(participant=p_candidate,
+    if igame == 1:
+        new_game = Result.objects.get(participant=p_candidate,
                                 round=current)
+    if igame == 2:
+        simul_l = Result.objects.filter(participant=p_candidate,
+                                   round=current,
+                                   game=2)
+        if simul_l:
+            return HttpResponseRedirect('/round/{:d}'.format(current))
+        else:
+            new_game = Result()
+            new_game.series = p_candidate.series
+            new_game.participant = p_candidate
+            new_game.round = current
+            new_game.game = 2
+            new_game.save()
     half_games = Result.objects.filter(participant__series=new_game.participant.series,
                                    round=current,
                                    color='?')
@@ -442,6 +462,8 @@ def add_game(request, *args, **kwargs):
         opponent = half_game.participant
         half_game.opponent = p_candidate
         new_game.opponent = opponent
+        half_game.opponent_result = new_game
+        new_game.opponent_result = half_game
         if opponent.score < p_candidate.score:
             p_black = opponent
             p_white = p_candidate
@@ -478,17 +500,31 @@ def del_game(request, *args, **kwargs):
     result = Result.objects.get(id=result_id)
     result2_l = Result.objects.filter(round=result.round,
                                  participant=result.opponent)
-    result.opponent = None
-    result.win = None
-    result.color = None
-    result.save()
     round = result.round
-    if result2_l:
-        result = result2_l[0]
+    if result.game == 1:
         result.opponent = None
         result.win = None
         result.color = None
         result.save()
+    if result.opponent_result:
+        result2 = result.opponent_result
+        has_opponent = True
+    else:
+        if result2_l:
+            result2 = result2_l[0]
+            has_opponent = True
+        else:
+            has_opponent = False
+    if result.game == 2:
+        result.delete()
+    if has_opponent:
+        if result2.game == 1:
+            result2.opponent = None
+            result2.win = None
+            result2.color = None
+            result2.save()
+        if result2.game == 2:
+            result2.delete()
     return HttpResponseRedirect('/round/{:d}'.format(round))
 
 @login_required
@@ -546,6 +582,8 @@ def make_pairing(request, *args, **kwargs):
             res_w = Result.objects.get(
                 participant=p_white,
                 round=current)
+            res_w.opponent_result = res_b
+            res_b.opponent_result = res_w
             handicap = get_handicap(p_black.score,  p_white.score)
             if handicap == 0:
                 komi = 6.5
@@ -613,12 +651,25 @@ def drop_pairing(request, *args, **kwargs):
         participant__series__seriesIsOpen=True
     ).filter(
         round=current
+    ).filter(
+        game=2
     )
     for result in results:
-        result.opponent = None
-        result.color = None
-        result.win = None
-        result.save()
+        result.delete()
+    results = Result.objects.filter(
+        participant__series__seriesIsOpen=True
+    ).filter(
+        round=current
+    )
+    for result in results:
+        if result.game == 2:
+            result.delete()
+        else:
+            result.opponent = None
+            result.color = None
+            result.win = None
+            result.save()
+        """
         results2 = Result.objects.filter(
             opponent=result.participant
         ).filter(
@@ -629,5 +680,6 @@ def drop_pairing(request, *args, **kwargs):
             result.color = None
             result.win = None
             result.save()
+        """
     return HttpResponseRedirect('/round/{:d}'.format(current))
 

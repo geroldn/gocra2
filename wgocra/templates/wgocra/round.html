@@ -52,6 +52,9 @@
                         {{ r.participant.player.last_name }}
                     </td>
                     <td>
+                      {% if club_admin %}
+                        <a href="/add_game/{{ r.opponent.id }}/{{ current }}/2/">o</a>
+                      {% endif %}
                         {{ r.opponent.player.first_name }}
                         {{ r.opponent.player.last_name }}
                     </td>
@@ -93,7 +96,7 @@
                 <tr>
                     <td>
                       {% if club_admin %}
-                        <a href="/add_game/{{ p.id }}/{{ current }}/">o</a>
+                        <a href="/add_game/{{ p.id }}/{{ current }}/1/">o</a>
                       {% endif %}
                         {{ p.player.first_name }}
                         {{ p.player.last_name }}

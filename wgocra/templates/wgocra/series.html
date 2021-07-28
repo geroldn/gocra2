@@ -95,11 +95,18 @@
       <td class="text-center">
         {{ p.grouper.score|floatformat }}
       </td>
-      {% for r in p.list %}
+      {% regroup p.list by round as r_list %}
+      {% for round in r_list %}
       <td class="text-center">
-        {% if r.round < current %}
+        {% if round.grouper < current %}
+        {% for r in round.list %}
+          <p class="mb-0">
             {{ r.r_string }}
-        {% elif r.round == current %}
+          </p>
+        {% endfor %}
+        {% elif round.grouper == current %}
+        {% for r in round.list %}
+          <p class="mb-0">
             {% if r.color == None %}
               {% if club_admin %}
                 {% if r.playing %}
@@ -114,21 +121,25 @@
                 {% endif %}
               {% endif %}
             {% else %}
-                {{ r.r_string }}
+              {{ r.r_string }}
             {% endif %}
+          </p>
+        {% endfor %}
         {% endif %}
       </td>
-      {% if r.gain < 0 %}
-          <td class="text-right text-danger">
+      <td>
+        {% for r in round.list %}
+        {% if r.gain < 0 %}
+          <p class="text-right text-danger mb-0">
                 {{ r.gain|floatformat:-1 }}
-          </td>
-      {% elif r.gain > 0 %}
-          <td class="text-right text-success">
+          </p class="mb-0">
+        {% elif r.gain > 0 %}
+          <p class="text-right text-success mb-0">
                 {{ r.gain|floatformat:-1 }}
-          </td>
-      {% else %}
-        <td></td>
-      {% endif %}
+          </p>
+        {% endif %}
+        {% endfor %}
+      </td>
       {% endfor %}
       <td class="text-center">
         {{ p.grouper.points_str }}

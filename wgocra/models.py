@@ -87,6 +87,9 @@ class Result(models.Model):
     opponent = models.ForeignKey(
         Participant, null=True, blank=True, on_delete=models.CASCADE,
         related_name='opp_results')
+    opponent_result = models.ForeignKey(
+        "Result", null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='participant_result')
     round = models.IntegerField()
     game = models.IntegerField(default=1)
     playing = models.BooleanField(default=False)
@@ -98,6 +101,12 @@ class Result(models.Model):
     #r_string = models.CharField(max_length=10, null=True, default='')
 
     def __str__(self):
+        participant = self.participant
+        if participant == None:
+            return '{:d}'.format(self.id)
+        series = participant.series
+        if series == None:
+            return '{:d}'.format(self.id)
         return '{:s}({:d}) {:s} {:s}'.format(
             self.participant.series.name,
             self.round,

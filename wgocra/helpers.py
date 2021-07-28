@@ -67,6 +67,7 @@ class ExternalMacMahon:
                 result.participant = part
                 result.color = None
                 result.round = n_round + 1
+                result.game = 1
                 result.win = ' '
                 result.save()
                 if n_round <= series.currentRoundNumber:
