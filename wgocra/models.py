@@ -60,6 +60,7 @@ class Participant(models.Model):
     score = models.FloatField(null=True, default=0)
     points_str = models.CharField(max_length=10, default='')
     new_rank = models.CharField(max_length=10, default='')
+    playing = models.BooleanField(default=False)
 
     def __str__(self):
         return '{:s} {:s} {:s} {:.0f}'.format(

@@ -101,6 +101,14 @@ class SeriesDetailView(TemplateView):
             # calculate the ratings:
             participants = Participant.objects.filter(series=series)
             self.calculate_rating(participants)
+            for participant in participants:
+                if Result.objects.filter(
+                    participant=participant,
+                    playing=True):
+                    participant.playing = True
+                else:
+                    participant.playing = False
+                participant.save()
             playing_dict = {}
             for participant in participants:
                 playing_dict['{:d}'.format(participant.id)] = \
@@ -273,12 +281,13 @@ def user_result(request, *args,**kwargs):
 
 @login_required
 def del_participant(request, *args, **kwargs):
-    series = Series.objects.get(pk=kwargs['sid'])
+    #series = Series.objects.get(pk=kwargs['sid'])
     participant = Participant.objects.get(pk=kwargs['pid'])
+    series = participant.series
     if is_club_admin(request.user, series.club):
         Result.objects.filter(
-            participant__series=series
-        ).filter(
+    #        participant__series=series
+    #    ).filter(
             participant=participant
         ).delete()
     participant.delete()
@@ -535,6 +544,8 @@ def make_pairing(request, *args, **kwargs):
     if series_l:
         series = series_l[0]
         to_pair = get_not_paired(series, current)
+        if len(to_pair) < 2:
+            return HttpResponseRedirect('/round/{:d}'.format(current))
         to_pair_sm = []
         #import pdb; pdb.set_trace()
         for player in to_pair:
@@ -578,10 +589,12 @@ def make_pairing(request, *args, **kwargs):
                     p_white = Participant.objects.get(id=game[0]['id'])
             res_b = Result.objects.get(
                 participant=p_black,
-                round=current)
+                round=current,
+                game=1)
             res_w = Result.objects.get(
                 participant=p_white,
-                round=current)
+                round=current,
+                game=1)
             res_w.opponent_result = res_b
             res_b.opponent_result = res_w
             handicap = get_handicap(p_black.score,  p_white.score)
@@ -609,30 +622,29 @@ def pair(to_pair, series, round):
     tries = []
     player1 = to_pair[0]
     for player2 in to_pair[1:]:
-        score = get_score(player1, player2, series, round)
-        tries.append({'score':score, 'p1':player1, 'p2':player2})
-    tries.sort(key=lambda t: t['score'])
+        p_score = get_score(player1, player2, series, round)
+        tries.append({'p_score':p_score, 'p1':player1, 'p2':player2})
+    tries.sort(key=lambda t: t['p_score'])
     if len(to_pair) < 4:
-        paired['score'] = tries[0]['score']
+        paired['p_score'] = tries[0]['p_score']
         paired['games'] = []
         paired['games'].append((tries[0]['p1'], tries[0]['p2']))
     else:
         cur_score = 1E8
-        paired['score'] = cur_score
-        paired['games'] = []
+        paired['p_score'] = cur_score
         for game in tries:
-            if game['score'] < cur_score:
-                sub_to_pair = [
-                    p for p in to_pair \
-                    if p != game['p1'] and p != game['p2']
-                ]
-                sub_paired = pair(sub_to_pair, series, round)
-                new_score = game['score'] + sub_paired['score']
-                if new_score < cur_score:
-                    cur_score = new_score
-                    paired['score'] = new_score
-                    paired['games'].append((game['p1'], game['p2']))
-                    paired['games'].extend(sub_paired['games'])
+            sub_to_pair = [
+                p for p in to_pair \
+                if p != game['p1'] and p != game['p2']
+            ]
+            sub_paired = pair(sub_to_pair, series, round)
+            new_score = game['p_score'] + sub_paired['p_score']
+            if new_score < cur_score:
+                cur_score = new_score
+                paired['p_score'] = cur_score
+                paired['games'] = []
+                paired['games'].append((game['p1'], game['p2']))
+                paired['games'].extend(sub_paired['games'])
     return paired
 
 def get_score(player1, player2, series, round):
