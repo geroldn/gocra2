@@ -5,7 +5,10 @@
 {% block content %}
 <ul>
 {% for club in object_list %}
-    <li>{{ club.name }} - {{ club.city }}</li>
+    <li>
+    <a href="/club_select/{{ club.pk }}">O</a>
+    {{ club.name }} - {{ club.city }}
+    </li>
 {% empty %}
     <li>No clubs yet.</li>
 {% endfor %}

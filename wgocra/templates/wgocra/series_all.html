@@ -25,13 +25,22 @@
                 {% if serie.seriesIsOpen %}
                 X
                 {% else %}
-                <a href="/series_open/{{ serie.pk }}">O</a>
+                  {% if club_admin %}
+                  <a href="/series_open/{{ serie.pk }}">O</a>
+                  {% endif %}
                 {% endif %}
             </td>
             <td> {{ serie.name }} </td>
             <td> {{ serie.version }} </td>
             <td>
-                <a href="/series_delete/{{ serie.pk }}">delete</a>
+              {% if club_admin %}
+                {% if serie.seriesIsOpen %}
+                  <a href="/series_finalize/{{ serie.pk }}">finalize</a>
+                {% endif %}
+                {% if not serie.seriesIsOpen %}
+                  <a href="/series_delete/{{ serie.pk }}">delete</a>
+                {% endif %}
+              {% endif %}
             </td>
         </tr>
         {% endfor %}

@@ -10,7 +10,7 @@ from django.http import HttpResponseRedirect
 from django.views.generic import ListView, TemplateView
 from random import randrange, seed
 #from random import randrange, seed
-from .models import Club, Player, Series, Participant, Result
+from .models import Club, Player, Series, Participant, Result, Rating
 from .forms import UploadFileForm, AddParticipantForm
 from .helpers import ExternalMacMahon, get_handicap
 from .helpers import rank2rating, rating2rank
@@ -83,15 +83,21 @@ class SeriesDetailView(TemplateView):
         context = super().get_context_data(**kwargs)
         user = self.request.user
         context['series'] = [] #returns length 0 in template if none
+        #import pdb; pdb.set_trace()
         if user.is_authenticated:
-            user_participant = Participant.objects.filter(
-                series=OuterRef('pk')
-            ).filter(player__account=user)
-            series_l = Series.objects.filter(
-                Exists(user_participant)
-            ).filter(
-                seriesIsOpen=True
-            )
+            try:
+                player = Player.objects.get(
+                    account=user
+                )
+            except Player.DoesNotExist:
+                player = None
+            if player:
+                club = player.get_last_club()
+                series_l = Series.objects.filter(
+                    club=club
+                ).filter(
+                    seriesIsOpen=True
+                )
         else:
             series_l = Series.objects.filter(seriesIsOpen=True)
         if series_l:
@@ -215,6 +221,7 @@ def add_user_playing_status(context, results, current, user):
     is_user_paired = False
     for result in results:
         if result.round == current \
+        and result.participant.player \
         and result.participant.player.account == user:
             is_user_in_series = True
             if result.playing:
@@ -234,11 +241,36 @@ class SeriesListView(ListView):
     ordering = ['-name', '-version']
     template_name = 'wgocra/series_all.html'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        try:
+            player = Player.objects.get(account=self.request.user)
+        except Player.DoesNotExist:
+            player = None
+        if player:
+            club = player.get_last_club()
+            context['club_admin'] = is_club_admin(self.request.user,
+                                                  club)
+        return context
+
 @method_decorator(login_required, name='dispatch')
 class ClubListView(ListView):
     """ Render list of clubs """
     model = Club
     template_name = 'wgocra/club_list.html'
+
+    def get_queryset(self):
+        user = self.request.user
+        try:
+            player = Player.objects.get(account=user)
+        except Player.DoesNotExist:
+            player = None
+        if player:
+            club_l = player.club.all()
+        else:
+            club_l = []
+        return club_l
+
 
 @method_decorator(login_required, name='dispatch')
 class PlayerListView(ListView):
@@ -252,6 +284,21 @@ def is_club_admin(user, club):
             admin_for=club
         )
     )
+
+@login_required
+def club_select(request, *args, **kwargs):
+    """ Select club as last accessed by this user """
+    club = Club.objects.get(pk=kwargs['id'])
+    user = request.user
+    try:
+        player = Player.objects.get(
+            account=user
+        )
+        player.last_club = club
+        player.save()
+    except Player.DoesNotExist:
+        player = None
+    return HttpResponseRedirect(reverse('gocra-series'))
 
 @login_required
 def user_result(request, *args,**kwargs):
@@ -388,9 +435,35 @@ def series_open(request, *args, **kwargs):
     return HttpResponseRedirect(reverse('gocra-series-list'))
 
 @login_required
-def toggle_playing_user(request, *args, **kwargs):
+def series_finalize(request, *args, **kwargs):
+    """ Save result ratings for players and close series """
+    series_id = kwargs['id']
+    series = Series.objects.get(pk=series_id)
+    participant_l = Participant.objects.filter(
+        series=series
+    )
+    for participant in participant_l:
+        try:
+            rating = Rating.objects.get(
+                series=series,
+                player=participant.player
+            )
+        except Rating.DoesNotExist:
+            rating = Rating()
+            rating.series = series
+            rating.player = participant.player
+        rating.old_rank = participant.rank
+        rating.rank = participant.new_rank
+        rating.old_rating = participant.rating
+        rating.rating =  participant.resultrating
+        rating.save()
+    return HttpResponseRedirect(reverse('gocra-series-list'))
+
+@login_required
+def set_playing_user(request, *args, **kwargs):
     """ Toggle round result as playing for player """
     series_id = kwargs['sid']
+    playing = ( kwargs['playing'] == 1 )
     series = Series.objects.get(id=series_id)
     user = request.user
     qs1 = Result.objects.filter(
@@ -401,17 +474,18 @@ def toggle_playing_user(request, *args, **kwargs):
         participant__player__account=user
     )
     for result in qs1:
-        result.playing = not result.playing
+        result.playing = playing
         result.save()
     return HttpResponseRedirect(reverse('gocra-series'))
 
 @login_required
-def result_toggle_playing(request, *args, **kwargs):
+def result_set_playing(request, *args, **kwargs):
     """ Toggle round result as playing for player """
     result_id = kwargs['id']
+    playing = ( kwargs['playing'] == 1 )
     qs1 = Result.objects.filter(pk=result_id)
     for result in qs1:
-        result.playing = not result.playing
+        result.playing = playing
         result.save()
     return HttpResponseRedirect(reverse('gocra-series'))
 

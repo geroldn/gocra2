@@ -22,11 +22,25 @@ class Player(models.Model):
     last_name = models.CharField(max_length=200)
     egd_pin = models.CharField(max_length=10, blank=True, null=True)
     reg_date = models.DateTimeField('date registered')
-    club = models.ManyToManyField(Club, blank=True)
+    club = models.ManyToManyField(Club, blank=True, related_name='players')
+    last_club = models.ForeignKey(Club, blank=True, null=True,
+                             on_delete=models.SET_NULL)
     account = models.ForeignKey(auth_models.User, blank=True, null=True, on_delete=models.SET_NULL)
 
     def __str__(self):
         return self.first_name + ' ' + self.last_name
+
+    def get_last_club(self):
+        club = self.last_club
+        if not club:
+            club_l = Club.objects.filter(
+                players=self
+            )
+            if club_l:
+                club = club_l[0]
+                self.last_club = club
+                self.save()
+        return club
 
 class Series(models.Model):
     """ Series; Has participants and results """
@@ -44,6 +58,23 @@ class Series(models.Model):
 
     def __str__(self):
         return self.name + ' (' + '{}'.format(self.version) + ')'
+
+class Rating(models.Model):
+    player = models.ForeignKey(Player, on_delete=models.CASCADE)
+    series = models.ForeignKey(Series, blank=True, null=True,
+                               on_delete=models.SET_NULL)
+    rank = models.CharField(max_length=10, null=True)
+    old_rank = models.CharField(max_length=10, null=True)
+    rating = models.IntegerField(null=True)
+    old_rating = models.IntegerField(null=True)
+
+    def __str__(self):
+        return (
+            f'{self.player.first_name} {self.player.last_name}'
+            f'({self.series.name})'
+            f': {self.rating}({self.rank})'
+            f' ({self.old_rating}({self.old_rank}))'
+        )
 
 class Participant(models.Model):
     """ Participant in a Series """

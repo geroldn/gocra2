@@ -8,13 +8,15 @@
 {% endblock %}
 {% block actions2 %}
 {% if series and user_in_series and not user_paired %}
-<a class="btn btn-secondary" href="/toggle_playing_user/{{ series.first.pk }}">
   {% if user_playing %}
+    <a class="btn btn-secondary" href="/set_playing_user/{{ series.first.pk }}/0/">
     Ik doe niet mee! 
+    </a>
   {% else %}
+    <a class="btn btn-secondary" href="/set_playing_user/{{ series.first.pk }}/1/">
     Ik doe mee! 
+    </a>
   {% endif %}
-</a>
 {% endif %}
 {% endblock %}
 
@@ -113,10 +115,10 @@
             {% if r.color == None %}
               {% if club_admin %}
                 {% if r.playing %}
-                    <a href="/result_toggle_playing/{{ r.pk }}"
+                    <a href="/result_set_playing/{{ r.pk }}/0/"
                         class="bg-danger text-white ">- ? -</a>
                 {% else %}
-                    <a href="/result_toggle_playing/{{ r.pk }}">o</a>
+                    <a href="/result_set_playing/{{ r.pk }}/1/">o</a>
                 {% endif %}
               {% else %}
                 {% if r.playing and user.is_authenticated %}
