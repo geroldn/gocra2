@@ -34,6 +34,8 @@ urlpatterns = [
     path('upload/', views.upload_macmahon, name='gocra-upload'),
     path('add_participant/<int:id>/', views.add_participant,
          name='gocra_add_participant'),
+    path('edit_participant/<int:pid>/', views.edit_participant,
+         name='gocra_edit_participant'),
     path('del_participant/<int:pid>/', views.del_participant,
          name='gocra_del_participant'),
 ]

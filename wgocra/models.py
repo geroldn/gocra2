@@ -42,6 +42,17 @@ class Player(models.Model):
                 self.save()
         return club
 
+    def get_last_rating(self, series):
+        rating = Rating.objects.filter(
+            player=self,
+            series__startDate__lte=series.startDate
+        ).order_by('-series__startDate').first()
+        if rating:
+            return rating
+        else:
+            return None
+
+
 class Series(models.Model):
     """ Series; Has participants and results """
     name = models.CharField(max_length=200)

@@ -80,7 +80,11 @@
     {% for p in p_list %}
     <tr>
       <td>
+        {% if club_admin %}
+        <a href="/edit_participant/{{ p.grouper.id }}">{{ p.grouper.nr }}</a>
+        {% else %}
         {{ p.grouper.nr }}
+        {% endif %}
         {{ p.grouper.player.first_name }}
         {{ p.grouper.player.last_name }}
         ({{ p.grouper.rank }})

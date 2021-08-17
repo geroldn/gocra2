@@ -12,6 +12,13 @@ class AddParticipantForm(forms.ModelForm):
         model = Participant
         fields = [
             'player',
+        ]
+
+class EditParticipantForm(forms.ModelForm):
+    """ Form to get a new participant for a series """
+    class Meta:
+        model = Participant
+        fields = [
             'rank',
             'rating',
         ]

@@ -1,13 +1,17 @@
 {% extends "wgocra/base_dialog.html" %}
 
 {% block title %}
-  Add Participant
+Edit Participant
 {% endblock %}
 
 {% block content %}
 
-<form action="/add_participant/{{ series.id }}/" method="post">
+<form action="/edit_participant/{{ participant.id }}/" method="post">
    {% csrf_token %}
+   <p>
+   {{ participant.player.first_name }}
+   {{ participant.player.last_name }}
+   </p>
    <tabel>
    {{ form.as_table }}
    </tabel>

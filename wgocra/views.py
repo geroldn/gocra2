@@ -11,7 +11,7 @@ from django.views.generic import ListView, TemplateView
 from random import randrange, seed
 #from random import randrange, seed
 from .models import Club, Player, Series, Participant, Result, Rating
-from .forms import UploadFileForm, AddParticipantForm
+from .forms import UploadFileForm, AddParticipantForm, EditParticipantForm
 from .helpers import ExternalMacMahon, get_handicap
 from .helpers import rank2rating, rating2rank
 from .ratingsystem import RatingSystem as Rsys
@@ -349,9 +349,18 @@ def add_participant(request, *args, **kwargs):
             if form.is_valid():
                 participant = Participant()
                 participant.series = series
-                participant.rank = form.cleaned_data['rank']
-                participant.rating = form.cleaned_data['rating']
                 participant.player = form.cleaned_data['player']
+                rating = participant.player.get_last_rating(series)
+                participant.rating = 100
+                if rating.rating:
+                    participant.rating = rating.rating
+                if rating.old_rating:
+                    participant.rating = rating.old_rating
+                participant.rank = '20k'
+                if rating.rank:
+                    participant.rank = rating.rank
+                if rating.old_rank:
+                    participant.rank = rating.old_rank
                 participant.save()
                 for round in range(series.numberOfRounds):
                     result = Result()
@@ -374,6 +383,29 @@ def add_participant(request, *args, **kwargs):
         return render(request,
                       'wgocra/add_participant.html',
                       {'form':form, 'series':series})
+    else:
+        return HttpResponseRedirect(reverse('gocra-series'))
+
+@login_required
+def edit_participant(request, *args, **kwargs):
+    participant = Participant.objects.get(pk=kwargs['pid'])
+    series = participant.series
+    if is_club_admin(request.user, series.club):
+        if request.method == 'POST':
+            form = EditParticipantForm(request.POST, instance=participant)
+            if form.is_valid():
+                participant.rank = form.cleaned_data['rank']
+                participant.rating = form.cleaned_data['rating']
+                participant.save()
+                return HttpResponseRedirect(reverse('gocra-series'))
+        else:
+            form = EditParticipantForm(instance=participant)
+        return render(request,
+                      'wgocra/edit_participant.html',
+                      {
+                          'form':form,
+                          'participant':participant,
+                      })
     else:
         return HttpResponseRedirect(reverse('gocra-series'))
 
