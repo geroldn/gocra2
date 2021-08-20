@@ -99,7 +99,10 @@ class SeriesDetailView(TemplateView):
                     seriesIsOpen=True
                 )
         else:
-            series_l = Series.objects.filter(seriesIsOpen=True)
+            series_l = Series.objects.filter(
+                seriesIsOpen=True,
+                club=1,
+            )
         if series_l:
             context['series'] = series_l
             series = series_l[0]
@@ -327,8 +330,40 @@ def user_result(request, *args,**kwargs):
     return HttpResponseRedirect('/round/{:d}'.format(current))
 
 @login_required
+def add_round(request, *args, **kwargs):
+    series = Series.objects.get(pk=kwargs['sid'])
+    round = series.numberOfRounds + 1
+    series.numberOfRounds = round
+    series.save()
+    participants = Participant.objects.filter(
+        series=series
+    )
+    for participant in participants:
+        result = Result()
+        result.series = series
+        result.participant = participant
+        result.round = round
+        result.game = 1
+        result.save()
+    return HttpResponseRedirect(reverse('gocra-series'))
+
+@login_required
+def rem_round(request, *args, **kwargs):
+    series = Series.objects.get(pk=kwargs['sid'])
+    participants = Participant.objects.filter(
+        series=series
+    )
+    for participant in participants:
+        Result.objects.filter(
+            participant=participant,
+            round__gte=series.numberOfRounds,
+        ).delete()
+    series.numberOfRounds = series.numberOfRounds - 1
+    series.save()
+    return HttpResponseRedirect(reverse('gocra-series'))
+
+@login_required
 def del_participant(request, *args, **kwargs):
-    #series = Series.objects.get(pk=kwargs['sid'])
     participant = Participant.objects.get(pk=kwargs['pid'])
     series = participant.series
     if is_club_admin(request.user, series.club):
@@ -352,15 +387,16 @@ def add_participant(request, *args, **kwargs):
                 participant.player = form.cleaned_data['player']
                 rating = participant.player.get_last_rating(series)
                 participant.rating = 100
-                if rating.rating:
-                    participant.rating = rating.rating
-                if rating.old_rating:
-                    participant.rating = rating.old_rating
                 participant.rank = '20k'
-                if rating.rank:
-                    participant.rank = rating.rank
-                if rating.old_rank:
-                    participant.rank = rating.old_rank
+                if rating:
+                    if rating.rating:
+                        participant.rating = rating.rating
+                    if rating.old_rating:
+                        participant.rating = rating.old_rating
+                    if rating.rank:
+                        participant.rank = rating.rank
+                    if rating.old_rank:
+                        participant.rank = rating.old_rank
                 participant.save()
                 for round in range(series.numberOfRounds):
                     result = Result()

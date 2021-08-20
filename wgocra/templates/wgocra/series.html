@@ -41,7 +41,14 @@
 	    </th>
 	{% endif %}
       {% endfor %}
-	  <th> </th>
+	  <th>
+        {% if club_admin %}
+		  <a href="/add_round/{{ series.first.id }}"> +R </a> &nbsp
+          {% if current < rounds|length %}
+		    <a href="/rem_round/{{ series.first.id }}"> -R </a> &nbsp
+          {% endif %}
+        {% endif %}
+      </th>
       <th scope="col" class="text-center" colspan="3">Rating</th>
 	  <th> </th>
     </tr>
