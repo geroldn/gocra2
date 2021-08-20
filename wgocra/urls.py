@@ -31,6 +31,7 @@ urlpatterns = [
     path('result_set_playing/<int:id>/<int:playing>/', views.result_set_playing,
          name='gocra-result-set-playing'),
     path('club_select/<int:id>/', views.club_select, name='gocra-club-select'),
+    path('new_series/', views.new_series, name='gocra-new-series'),
     path('upload/', views.upload_macmahon, name='gocra-upload'),
     path('add_round/<int:sid>/', views.add_round,
          name='gocra_add_round'),

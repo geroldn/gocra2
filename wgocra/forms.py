@@ -1,6 +1,14 @@
 """ Helper classes """
 from django import forms
-from .models import Participant
+from .models import Participant, Series
+
+class NewSeriesForm(forms.ModelForm):
+    """ Form to create a new series """
+    class Meta:
+        model = Series
+        fields = [
+            'name',
+        ]
 
 class UploadFileForm(forms.Form):
     """ Form to get a file to upload """
@@ -15,7 +23,7 @@ class AddParticipantForm(forms.ModelForm):
         ]
 
 class EditParticipantForm(forms.ModelForm):
-    """ Form to get a new participant for a series """
+    """ Form to get edit participant info """
     class Meta:
         model = Participant
         fields = [

@@ -236,12 +236,11 @@ def add_user_playing_status(context, results, current, user):
     context['user_in_series'] = is_user_in_series
 
 @method_decorator(login_required, name='dispatch')
-class SeriesListView(ListView):
+class SeriesListView(TemplateView):
     """
     Renders a list of Gocra Series.
     """
     model = Series
-    ordering = ['-name', '-version']
     template_name = 'wgocra/series_all.html'
 
     def get_context_data(self, **kwargs):
@@ -254,6 +253,12 @@ class SeriesListView(ListView):
             club = player.get_last_club()
             context['club_admin'] = is_club_admin(self.request.user,
                                                   club)
+        else:
+            club = None
+        series_l = Series.objects.filter(
+            club=club
+        ).order_by('-name', '-version')
+        context['series'] = series_l
         return context
 
 @method_decorator(login_required, name='dispatch')
@@ -444,6 +449,11 @@ def edit_participant(request, *args, **kwargs):
                       })
     else:
         return HttpResponseRedirect(reverse('gocra-series'))
+
+@login_required
+def new_series(request):
+    """ Create new series from scratch """
+    return HttpResponseRedirect(reverse('gocra-series-list'))
 
 @login_required
 def upload_macmahon(request):

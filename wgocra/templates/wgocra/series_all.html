@@ -2,9 +2,12 @@
 
 {% block title %}Series{% endblock %}
 {% block actions %}
+  <a class="btn btn-secondary" href="/new_series/">
+  Nieuwe serie
+  </a>
   <a class="btn btn-secondary" href="/upload/">
   Upload MacMahon xml
-</a>
+  </a>
 {% endblock %}
 
 {% block content %}
@@ -19,7 +22,7 @@
         </tr>
     </thead>
     <tbody>
-        {% for serie in object_list %}
+        {% for serie in series %}
         <tr>
             <td>
                 {% if serie.seriesIsOpen %}
