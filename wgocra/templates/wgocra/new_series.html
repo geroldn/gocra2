@@ -1,0 +1,18 @@
+{% extends "wgocra/base_dialog.html" %}
+
+{% block title %}
+  New Series
+{% endblock %}
+
+{% block content %}
+
+<form action="/new_series/" method="post">
+   {% csrf_token %}
+   <tabel>
+   {{ form.as_table }}
+   </tabel>
+     <input type="submit" value="Submit">
+     <a href="/series"> Cancel </a>
+</form>
+
+{% endblock %}

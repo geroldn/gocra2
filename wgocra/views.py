@@ -11,7 +11,8 @@ from django.views.generic import ListView, TemplateView
 from random import randrange, seed
 #from random import randrange, seed
 from .models import Club, Player, Series, Participant, Result, Rating
-from .forms import UploadFileForm, AddParticipantForm, EditParticipantForm
+from .forms import UploadFileForm, AddParticipantForm, \
+        EditParticipantForm, NewSeriesForm
 from .helpers import ExternalMacMahon, get_handicap
 from .helpers import rank2rating, rating2rank
 from .ratingsystem import RatingSystem as Rsys
@@ -453,7 +454,32 @@ def edit_participant(request, *args, **kwargs):
 @login_required
 def new_series(request):
     """ Create new series from scratch """
-    return HttpResponseRedirect(reverse('gocra-series-list'))
+    #import pdb; pdb.set_trace()
+    user = request.user
+    player = Player.objects.get(account=user)
+    club = player.get_last_club()
+    if player and club and is_club_admin(user, club):
+        if request.method == 'POST':
+            form = NewSeriesForm(request.POST)
+            if form.is_valid():
+                series = Series()
+                series.club = club
+                series.name = form.cleaned_data['name']
+                series.numberOfRounds = 6
+                series.currentRoundNumber = 1
+                series.lastOpponents = 4
+                series.seriesIsOpen = False
+                series.takeCurrentRoundInAccount = True
+                series.version = 1
+                series.save()
+                return HttpResponseRedirect(reverse('gocra-series-list'))
+        else:
+            form = NewSeriesForm()
+        return render(request,
+                      'wgocra/new_series.html',
+                      {'form':form})
+    else:
+        return HttpResponseRedirect(reverse('gocra-series-list'))
 
 @login_required
 def upload_macmahon(request):
