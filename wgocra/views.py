@@ -33,9 +33,11 @@ class RoundDetailView(TemplateView):
     def get_context_data(self, **kwargs):
         current = self.kwargs['current']
         context = super().get_context_data(**kwargs)
-        series = Series.objects.get(seriesIsOpen=True)
-        context['series'] = series
         user = self.request.user
+        cplayer = Player.objects.get(account=user)
+        cclub = cplayer.get_last_club()
+        series = Series.objects.get(seriesIsOpen=True, club=cclub)
+        context['series'] = series
         if series:
             results = Result.objects.filter(
                 participant__series=series
@@ -503,7 +505,10 @@ def upload_macmahon(request):
 def series_set_round(request, *args, **kwargs):
     #import pdb; pdb.set_trace()
     round = kwargs['round']
-    qs1 = Series.objects.filter(seriesIsOpen=True)
+    user = request.user
+    player = Player.objects.get(account=user)
+    club = player.get_last_club()
+    qs1 = Series.objects.filter(seriesIsOpen=True, club=club)
     if qs1:
         series = qs1[0]
         series.currentRoundNumber = round
@@ -527,8 +532,11 @@ def series_delete(request, *args, **kwargs):
 @login_required
 def series_open(request, *args, **kwargs):
     """ Set specific series as open """
+    user = request.user
+    player = Player.objects.get(account=user)
+    club = player.get_last_club()
     series_id = kwargs['id']
-    qs1 = Series.objects.filter(seriesIsOpen=True)
+    qs1 = Series.objects.filter(seriesIsOpen=True, club=club)
     for series in qs1:
         series.seriesIsOpen = False
         series.save()
@@ -718,7 +726,10 @@ def del_game(request, *args, **kwargs):
 def make_pairing(request, *args, **kwargs):
     seed()
     current = kwargs['current']
-    series_l = Series.objects.filter(seriesIsOpen=True)
+    cuser = request.user
+    cplayer = Player.objects.get(account=cuser)
+    cclub = cplayer.get_last_club()
+    series_l = Series.objects.filter(seriesIsOpen=True, club=cclub)
     if series_l:
         series = series_l[0]
         to_pair = get_not_paired(series, current)
@@ -837,8 +848,12 @@ def get_score(player1, player2, series, round):
 @login_required
 def drop_pairing(request, *args, **kwargs):
     current = kwargs['current']
+    cuser = request.user
+    cplayer = Player.objects.get(account=cuser)
+    cclub = cplayer.get_last_club()
     results = Result.objects.filter(
-        participant__series__seriesIsOpen=True
+        participant__series__seriesIsOpen=True,
+        participant__series__club=cclub
     ).filter(
         round=current
     ).filter(
@@ -847,7 +862,8 @@ def drop_pairing(request, *args, **kwargs):
     for result in results:
         result.delete()
     results = Result.objects.filter(
-        participant__series__seriesIsOpen=True
+        participant__series__seriesIsOpen=True,
+        participant__series__club=cclub
     ).filter(
         round=current
     )
