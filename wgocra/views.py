@@ -288,6 +288,21 @@ class PlayerListView(ListView):
     """ Render list of players """
     model = Player
     template_name = 'wgocra/player_list.html'
+    def get_queryset(self):
+        user = self.request.user
+        try:
+            player = Player.objects.get(account=user)
+        except Player.DoesNotExist:
+            player = None
+        if player:
+            club = player.get_last_club()
+        else:
+            return None
+        player_l = Player.objects.filter(
+            club=club
+        )
+        return player_l
+
 
 def is_club_admin(user, club):
     return (

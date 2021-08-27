@@ -28,7 +28,18 @@ class Player(models.Model):
     account = models.ForeignKey(auth_models.User, blank=True, null=True, on_delete=models.SET_NULL)
 
     def __str__(self):
-        return self.first_name + ' ' + self.last_name
+        account = self.account
+        if account:
+
+            s1 = self.account.username.ljust(20, '.')
+            s2 = (self.first_name + " " + self.last_name).ljust(30, '.')
+            s3 = self.account.email
+            return s1 + s2 + s3
+        else:
+            return '---- ' \
+                + self.first_name + ' ' + self.last_name + ' ' \
+                + '----'
+
 
     def get_last_club(self):
         club = self.last_club
