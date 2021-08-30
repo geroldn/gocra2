@@ -70,6 +70,8 @@ def get_not_paired(series, round):
         series=series
     ).filter(
         Exists(null_pairing)
+    ).order_by(
+        '-score'
     )
     return not_paired
 
@@ -775,8 +777,8 @@ def make_pairing(request, *args, **kwargs):
             for result in result_l2:
                 player_sm['recentOps'].append(result.opponent.player_id)
             to_pair_sm.append(player_sm)
-        paired = pair(to_pair_sm, series, current)
-        for game in paired['games']:
+        games = pair_long(to_pair_sm, series, current)
+        for game in games:
             if game[0]['score'] < game[1]['score']:
                 p_black = Participant.objects.get(id=game[0]['id'])
                 p_white = Participant.objects.get(id=game[1]['id'])
@@ -819,6 +821,19 @@ def make_pairing(request, *args, **kwargs):
             res_w.komi = komi
             res_w.save()
     return HttpResponseRedirect('/round/{:d}'.format(current))
+
+def pair_long(to_pair, series, round):
+    games = []
+    while len(to_pair) > 11:
+        paired = pair(to_pair[0:10], series, round)
+        games2add = paired['games'][0:4]
+        games.extend(games2add)
+        for game in games2add:
+            to_pair.remove(game[0])
+            to_pair.remove(game[1])
+    paired = pair(to_pair, series, round)
+    games.extend(paired['games'])
+    return games
 
 def pair(to_pair, series, round):
     #import pdb; pdb.set_trace()
