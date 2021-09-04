@@ -416,11 +416,11 @@ def add_participant(request, *args, **kwargs):
                 if rating:
                     if rating.rating:
                         participant.rating = rating.rating
-                    if rating.old_rating:
+                    elif rating.old_rating:
                         participant.rating = rating.old_rating
                     if rating.rank:
                         participant.rank = rating.rank
-                    if rating.old_rank:
+                    elif rating.old_rank:
                         participant.rank = rating.old_rank
                 participant.save()
                 for round in range(series.numberOfRounds):
