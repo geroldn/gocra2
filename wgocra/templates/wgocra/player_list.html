@@ -3,6 +3,9 @@
 {% block title %}Players{% endblock %}
 
 {% block content %}
+    <a class="btn btn-secondary" href="/set_playing_user/{{ series.first.pk }}/0/">
+        Speler toevoegen {{ club.name  }}
+    </a>
 <ul>
 {% for player in object_list %}
     <li>{{ player.first_name }} {{ player.last_name }}</li>

@@ -4,7 +4,7 @@ from . import views
 urlpatterns = [
     path('', views.SeriesDetailView.as_view(), name='gocra-series'),
     path('clubs/', views.ClubListView.as_view(), name='gocra-clubs'),
-    path('players/', views.PlayerListView.as_view(), name='gocra-players'),
+    path('players/<int:user>/', views.PlayerListView.as_view(), name='gocra-players'),
     path('series/', views.SeriesDetailView.as_view(), name='gocra-series'),
     path('round/<int:current>', views.RoundDetailView.as_view(), name='gocra-round'),
     path('add_game/<int:p_id>/<int:current>/<int:game>/', views.add_game,
