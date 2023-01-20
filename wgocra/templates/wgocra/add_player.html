@@ -1,0 +1,22 @@
+{% extends "wgocra/base_dialog.html" %}
+
+{% block title %}
+add Player
+{% endblock %}
+
+{% block content %}
+
+<form action="/add_player/{{ uid }}/{{ plid }}/" method="post">
+   {% csrf_token %}
+   <p>
+   uid: {{ uid }} 
+   plid: {{ plid }}
+   </p>
+   <tabel>
+   {{ form.as_table }}
+   </tabel>
+     <input type="submit" value="Submit">
+     <a href="/series"> Cancel </a>
+</form>
+
+{% endblock %}

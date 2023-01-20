@@ -1,6 +1,33 @@
 """ Helper classes """
 from django import forms
-from .models import Participant, Series
+from .models import Participant, Series, Player
+from django.contrib.auth.models import User
+
+class AddUserEmailForm(forms.ModelForm):
+    """ Form to add a player to the system """
+    class Meta:
+        model = User
+        fields = [
+            'email',
+        ]
+
+class AddUserForm(forms.ModelForm):
+    """ Form to add a player to the system """
+    class Meta:
+        model = User
+        fields = [
+            'username',
+            'email',
+        ]
+
+class AddPlayerForm(forms.ModelForm):
+    """ Form to add a player to the system """
+    class Meta:
+        model = User
+        fields = [
+            'first_name',
+            'last_name',
+        ]
 
 class NewSeriesForm(forms.ModelForm):
     """ Form to create a new series """

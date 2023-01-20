@@ -1,0 +1,21 @@
+{% extends "wgocra/base_dialog.html" %}
+
+{% block title %}
+Choose or add user account
+{% endblock %}
+
+{% block content %}
+
+<form action="/add_account/" method="post">
+   {% csrf_token %}
+   <p>
+   Enter email address (existing or new user):
+   </p>
+   <tabel>
+   {{ form.as_table }}
+   </tabel>
+     <input type="submit" value="Submit">
+     <a href="/series"> Cancel </a>
+</form>
+
+{% endblock %}

@@ -1,6 +1,8 @@
 """ gocra Django views """
 # Create your views here.
 #import logging
+import datetime
+from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import models as auth_models
 from django.utils.decorators import method_decorator
@@ -12,7 +14,8 @@ from random import randrange, seed
 #from random import randrange, seed
 from .models import Club, Player, Series, Participant, Result, Rating
 from .forms import UploadFileForm, AddParticipantForm, \
-        EditParticipantForm, NewSeriesForm
+        EditParticipantForm, NewSeriesForm, AddPlayerForm, \
+        AddUserEmailForm, AddUserForm
 from .helpers import ExternalMacMahon, get_handicap
 from .helpers import rank2rating, rating2rank
 from .ratingsystem import RatingSystem as Rsys
@@ -485,6 +488,84 @@ def edit_participant(request, *args, **kwargs):
                       })
     else:
         return HttpResponseRedirect(reverse('gocra-series'))
+
+@login_required
+def get_add_account(request, *args, **kwargs):
+    """ Find existing account or add new account """
+    #import pdb; pdb.set_trace()
+    if request.method == 'POST':
+        form = AddUserEmailForm(request.POST)
+        if form.is_valid():
+            p_user_l = User.objects.filter(email=form.cleaned_data['email'])
+            if p_user_l:
+                p_user = p_user_l[0]
+                p_player_l = Player.objects.filter(account=p_user)
+                if p_player_l:
+                    p_plid = p_player_l[0].pk
+                else:
+                    p_plid = 0
+            else:
+                p_user = User()
+                p_user.email = form.cleaned_data['email']
+                p_user.save()
+            url = reverse('gocra-add-player', args=[p_user.id, p_plid])
+            return HttpResponseRedirect(url)
+    else:
+        form = AddUserEmailForm()
+        return render(request,
+                      'wgocra/add_user_email.html',
+                      {'form':form})
+
+
+@login_required
+def add_player(request, *args, **kwargs):
+    """ Add a player to the club """
+    #import pdb; pdb.set_trace()
+    l_user = request.user
+    l_player = Player.objects.get(account=l_user)
+    club = l_player.get_last_club()
+    if club and is_club_admin(l_user, club):
+        uid = kwargs['uid']
+        p_user = User.objects.get(pk=uid)
+        plid = kwargs['plid']
+        if plid == 0:
+            player = None
+        else:
+            player = Player.objects.get(id=plid)
+        if request.method == 'POST':
+            form = AddPlayerForm(request.POST)
+            if form.is_valid():
+                if not player:
+                    player_l = Player.objects.filter(account=p_user)
+                    if player_l:
+                        player = player_l[0]
+                    else:
+                        player = Player()
+                    player.first_name = form.cleaned_data['first_name']
+                    player.last_name = form.cleaned_data['last_name']
+                    player.account = p_user
+                    dtnow = datetime.datetime.now()
+                    player.reg_date = dtnow.date()
+                    player.reg_time = dtnow.time()
+                    player.save()
+                club.players.add(player)
+                return HttpResponseRedirect(
+                    reverse('gocra-players', args=[l_user.pk])
+                )
+        else:
+            if plid == 0:
+                form = AddPlayerForm()
+            else:
+                form = AddPlayerForm(instance=player)
+        return render(request,
+                      'wgocra/add_player.html',
+                      {
+                          'form':form,
+                          'uid':uid,
+                          'plid':plid,
+                      })
+    else:
+        return HttpResponseRedirect(reverse('gocra-series-list'))
 
 @login_required
 def new_series(request):
