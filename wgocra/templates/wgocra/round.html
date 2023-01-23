@@ -50,6 +50,7 @@
                     <td>
                         {{ r.participant.player.first_name }}
                         {{ r.participant.player.last_name }}
+                        ({{ r.participant.score|add:"0" }})
                     </td>
                     <td>
                       {% if club_admin %}
@@ -57,6 +58,7 @@
                       {% endif %}
                         {{ r.opponent.player.first_name }}
                         {{ r.opponent.player.last_name }}
+                        ({{ r.opponent.score|add:"0" }})
                     </td>
                     <td>
 			{% if r.handicap > 1 %}
@@ -100,6 +102,7 @@
                       {% endif %}
                         {{ p.player.first_name }}
                         {{ p.player.last_name }}
+                        ({{ p.score|add:"0" }})
                     </td>
                 </tr>
                 {% empty %}
