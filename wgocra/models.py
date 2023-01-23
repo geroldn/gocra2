@@ -57,6 +57,7 @@ class Player(models.Model):
     def get_last_rating(self, series):
         rating = Rating.objects.filter(
             player=self,
+            series__club=series.club,
             series__startDate__lte=series.startDate
         ).order_by('-series__startDate').first()
         if rating:

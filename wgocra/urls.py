@@ -41,6 +41,8 @@ urlpatterns = [
          name='gocra_rem_round'),
     path('add_participant/<int:id>/', views.add_participant,
          name='gocra_add_participant'),
+    path('add_participant_list/<int:id>/', views.add_active_participants,
+         name='gocra_add_participant_list'),
     path('edit_participant/<int:pid>/', views.edit_participant,
          name='gocra_edit_participant'),
     path('del_participant/<int:pid>/', views.del_participant,

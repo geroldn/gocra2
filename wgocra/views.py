@@ -420,6 +420,31 @@ def del_participant(request, *args, **kwargs):
     participant.delete()
     return HttpResponseRedirect(reverse('gocra-series'))
 
+def add_participant_to_series(series, player):
+    participant = Participant()
+    participant.series = series
+    participant.player = player
+    rating = participant.player.get_last_rating(series)
+    participant.rating = 100
+    participant.rank = '20k'
+    if rating:
+        if rating.rating:
+            participant.rating = rating.rating
+        elif rating.old_rating:
+            participant.rating = rating.old_rating
+        if rating.rank:
+            participant.rank = rating.rank
+        elif rating.old_rank:
+            participant.rank = rating.old_rank
+    participant.save()
+    for round in range(series.numberOfRounds):
+        result = Result()
+        result.series = series
+        result.participant = participant
+        result.round = round + 1
+        result.game = 1
+        result.save()
+
 @login_required
 def add_participant(request, *args, **kwargs):
     series = Series.objects.get(pk=kwargs['id'])
@@ -427,29 +452,7 @@ def add_participant(request, *args, **kwargs):
         if request.method == 'POST':
             form = AddParticipantForm(request.POST)
             if form.is_valid():
-                participant = Participant()
-                participant.series = series
-                participant.player = form.cleaned_data['player']
-                rating = participant.player.get_last_rating(series)
-                participant.rating = 100
-                participant.rank = '20k'
-                if rating:
-                    if rating.rating:
-                        participant.rating = rating.rating
-                    elif rating.old_rating:
-                        participant.rating = rating.old_rating
-                    if rating.rank:
-                        participant.rank = rating.rank
-                    elif rating.old_rank:
-                        participant.rank = rating.old_rank
-                participant.save()
-                for round in range(series.numberOfRounds):
-                    result = Result()
-                    result.series = series
-                    result.participant = participant
-                    result.round = round + 1
-                    result.game = 1
-                    result.save()
+                add_participant_to_series(series, form.cleaned_data['player'])
                 return HttpResponseRedirect(reverse('gocra-series'))
         else:
             form = AddParticipantForm()
@@ -466,6 +469,23 @@ def add_participant(request, *args, **kwargs):
                       {'form':form, 'series':series})
     else:
         return HttpResponseRedirect(reverse('gocra-series'))
+
+@login_required
+def add_active_participants(request, *args, **kwargs):
+    #import pdb; pdb.set_trace()
+    series = Series.objects.get(pk=kwargs['id'])
+    if is_club_admin(request.user, series.club):
+      last_series_l = Series.objects.filter(
+          club=series.club,
+          startDate__lt=series.startDate
+      ).order_by('-startDate')
+      last_series = last_series_l.first()
+      if last_series:
+          participant_l=Participant.objects.filter(series=last_series)
+          for participant in participant_l:
+              add_participant_to_series(series, participant.player)
+    return HttpResponseRedirect(reverse('gocra-series'))
+
 
 @login_required
 def edit_participant(request, *args, **kwargs):
@@ -670,6 +690,8 @@ def series_finalize(request, *args, **kwargs):
     """ Save result ratings for players and close series """
     series_id = kwargs['id']
     series = Series.objects.get(pk=series_id)
+    series.seriesIsOpen = False
+    series.save()
     participant_l = Participant.objects.filter(
         series=series
     )
