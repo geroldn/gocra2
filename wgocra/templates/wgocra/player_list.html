@@ -8,7 +8,11 @@
     </a>
 <ul>
 {% for player in object_list %}
-    <li>{{ player.first_name }} {{ player.last_name }}</li>
+<li>{{ player.first_name }} {{ player.last_name }}
+    (
+    {{ player.account.username }} /
+    {{ player.account.email }}
+    )</li>
 {% empty %}
     <li>No players yet.</li>
 {% endfor %}

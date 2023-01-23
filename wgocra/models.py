@@ -1,6 +1,7 @@
 """ wgocra Django models """
 # Create your models here.
 from django.db import models
+from django.contrib.auth.models import User
 from django.contrib.auth import models as auth_models
 from gocra.gocra import Rank
 from django.utils import timezone
@@ -63,6 +64,13 @@ class Player(models.Model):
         else:
             return None
 
+    def createUserName(self):
+        n = 1
+        username = self.first_name + self.last_name[:n]
+        while User.objects.filter(username=username):
+            n += 1 
+            username = self.first_name + self.last_name[:n]
+        return username
 
 class Series(models.Model):
     """ Series; Has participants and results """

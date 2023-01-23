@@ -497,13 +497,12 @@ def get_add_account(request, *args, **kwargs):
         form = AddUserEmailForm(request.POST)
         if form.is_valid():
             p_user_l = User.objects.filter(email=form.cleaned_data['email'])
+            p_plid = 0
             if p_user_l:
                 p_user = p_user_l[0]
                 p_player_l = Player.objects.filter(account=p_user)
                 if p_player_l:
                     p_plid = p_player_l[0].pk
-                else:
-                    p_plid = 0
             else:
                 p_user = User()
                 p_user.email = form.cleaned_data['email']
@@ -544,6 +543,9 @@ def add_player(request, *args, **kwargs):
                     player.first_name = form.cleaned_data['first_name']
                     player.last_name = form.cleaned_data['last_name']
                     player.account = p_user
+                    if not p_user.username:
+                        p_user.username = player.createUserName()
+                        p_user.save()
                     dtnow = datetime.datetime.now()
                     player.reg_date = dtnow.date()
                     player.reg_time = dtnow.time()
