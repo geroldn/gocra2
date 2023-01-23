@@ -2,6 +2,7 @@
 # Create your views here.
 #import logging
 import datetime
+import string
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import models as auth_models
@@ -10,7 +11,7 @@ from django.db.models import Exists, OuterRef
 from django.shortcuts import render, reverse
 from django.http import HttpResponseRedirect
 from django.views.generic import ListView, TemplateView
-from random import randrange, seed
+from random import randrange, seed, choices
 #from random import randrange, seed
 from .models import Club, Player, Series, Participant, Result, Rating
 from .forms import UploadFileForm, AddParticipantForm, \
@@ -506,6 +507,8 @@ def get_add_account(request, *args, **kwargs):
             else:
                 p_user = User()
                 p_user.email = form.cleaned_data['email']
+                p_user.username = '#' + ''.join(choices(string.ascii_uppercase +
+                             string.digits, k=6))
                 p_user.save()
             url = reverse('gocra-add-player', args=[p_user.id, p_plid])
             return HttpResponseRedirect(url)
@@ -543,7 +546,7 @@ def add_player(request, *args, **kwargs):
                     player.first_name = form.cleaned_data['first_name']
                     player.last_name = form.cleaned_data['last_name']
                     player.account = p_user
-                    if not p_user.username:
+                    if p_user.username[:1] == '#':
                         p_user.username = player.createUserName()
                         p_user.save()
                     dtnow = datetime.datetime.now()

@@ -66,7 +66,7 @@ class Player(models.Model):
 
     def createUserName(self):
         n = 1
-        username = self.first_name + self.last_name[:n]
+        username = (self.first_name + self.last_name[:n]).lower()
         while User.objects.filter(username=username):
             n += 1 
             username = self.first_name + self.last_name[:n]
