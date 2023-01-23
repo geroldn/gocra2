@@ -66,10 +66,11 @@ class Player(models.Model):
 
     def createUserName(self):
         n = 1
-        username = (self.first_name + self.last_name[:n]).lower()
+        username = (self.first_name.split('_')[0] + self.last_name[:n]).lower()
         while User.objects.filter(username=username):
             n += 1 
-            username = self.first_name + self.last_name[:n]
+            username = (self.first_name.split('_')[0] +
+            self.last_name[:n]).lower()
         return username
 
 class Series(models.Model):
