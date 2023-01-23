@@ -9,8 +9,9 @@ add Player
 <form action="/add_player/{{ uid }}/{{ plid }}/" method="post">
    {% csrf_token %}
    <p>
-   uid: {{ uid }} 
-   plid: {{ plid }}
+   Enter 'tussenvoegsels' as postfix in firstname seperated by '_'.<br>
+   e.g. Pipo van der Clown becomes<br>
+   first name: Pipo_van_der; last name: Clown
    </p>
    <tabel>
    {{ form.as_table }}
