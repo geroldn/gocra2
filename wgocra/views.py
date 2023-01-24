@@ -482,8 +482,16 @@ def add_active_participants(request, *args, **kwargs):
       last_series = last_series_l.first()
       if last_series:
           participant_l=Participant.objects.filter(series=last_series)
+          curr_l=Player.objects.filter(
+              Exists(Participant.objects.filter(
+                  player=OuterRef('pk'),
+                  series=series
+              )),
+              club=series.club
+          )
           for participant in participant_l:
-              add_participant_to_series(series, participant.player)
+              if participant.player not in curr_l:
+                  add_participant_to_series(series, participant.player)
     return HttpResponseRedirect(reverse('gocra-series'))
 
 
