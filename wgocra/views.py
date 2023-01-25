@@ -49,7 +49,11 @@ class RoundDetailView(TemplateView):
             round_results = results.filter(
                 color__in=['B', '?']
             ).order_by('participant__nr')
-            context['round_results'] = round_results
+            boards=[]
+            for b_nr, res in enumerate(round_results, start=1):
+                boards.append({'board':b_nr, 'result':res})
+            context['boards'] = boards
+            #context['round_results'] = round_results
             not_paired = get_not_paired(series, current)
             context['not_paired'] = not_paired
             context['club_admin'] = is_club_admin(self.request.user,
