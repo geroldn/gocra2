@@ -3,9 +3,11 @@
 {% block title %}Players{% endblock %}
 
 {% block content %}
+  {% if club_admin %}
     <a class="btn btn-secondary" href="/add_account/">
         Speler toevoegen {{ club.name  }}
     </a>
+  {% endif %}
 <ul>
 {% for player in object_list %}
 <li>{{ player.first_name }} {{ player.last_name }}

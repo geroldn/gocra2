@@ -99,7 +99,9 @@
         {{ p.grouper.player.last_name }}
         ({{ p.grouper.rank }})
         {% if not p.grouper.playing %}
-          <a href="/del_participant/{{ p.grouper.pk }}">-</a>
+          {% if club_admin %}
+            <a href="/del_participant/{{ p.grouper.pk }}">-</a>
+          {% endif %}
         {% endif %}
       </td>
       {% comment %}

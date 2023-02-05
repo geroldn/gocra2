@@ -301,17 +301,19 @@ class PlayerListView(ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        club_admin = False
         try:
             player = Player.objects.get(account=self.request.user)
         except Player.DoesNotExist:
             player = None
         if player:
             club = player.get_last_club()
-            context['club_admin'] = is_club_admin(self.request.user,
+            club_admin = is_club_admin(self.request.user,
                                                   club)
         else:
             club = None
         context['club'] = club
+        context['club_admin'] = club_admin
         return context
 
     def get_queryset(self):
@@ -526,29 +528,35 @@ def edit_participant(request, *args, **kwargs):
 def get_add_account(request, *args, **kwargs):
     """ Find existing account or add new account """
     #import pdb; pdb.set_trace()
-    if request.method == 'POST':
-        form = AddUserEmailForm(request.POST)
-        if form.is_valid():
-            p_user_l = User.objects.filter(email=form.cleaned_data['email'])
-            p_plid = 0
-            if p_user_l:
-                p_user = p_user_l[0]
-                p_player_l = Player.objects.filter(account=p_user)
-                if p_player_l:
-                    p_plid = p_player_l[0].pk
-            else:
-                p_user = User()
-                p_user.email = form.cleaned_data['email']
-                p_user.username = '#' + ''.join(choices(string.ascii_uppercase +
-                             string.digits, k=6))
-                p_user.save()
-            url = reverse('gocra-add-player', args=[p_user.id, p_plid])
-            return HttpResponseRedirect(url)
+    l_user = request.user
+    l_player = Player.objects.get(account=l_user)
+    club = l_player.get_last_club()
+    if club and is_club_admin(l_user, club):
+        if request.method == 'POST':
+            form = AddUserEmailForm(request.POST)
+            if form.is_valid():
+                p_user_l = User.objects.filter(email=form.cleaned_data['email'])
+                p_plid = 0
+                if p_user_l:
+                    p_user = p_user_l[0]
+                    p_player_l = Player.objects.filter(account=p_user)
+                    if p_player_l:
+                        p_plid = p_player_l[0].pk
+                else:
+                    p_user = User()
+                    p_user.email = form.cleaned_data['email']
+                    p_user.username = '#' + ''.join(choices(string.ascii_uppercase +
+                                 string.digits, k=6))
+                    p_user.save()
+                url = reverse('gocra-add-player', args=[p_user.id, p_plid])
+                return HttpResponseRedirect(url)
+        else:
+            form = AddUserEmailForm()
+            return render(request,
+                          'wgocra/add_user_email.html',
+                          {'form':form})
     else:
-        form = AddUserEmailForm()
-        return render(request,
-                      'wgocra/add_user_email.html',
-                      {'form':form})
+        return HttpResponseRedirect(reverse('gocra-series'))
 
 
 @login_required
@@ -674,11 +682,17 @@ def series_set_round(request, *args, **kwargs):
 @login_required
 def series_delete(request, *args, **kwargs):
     """ Delete specific series """
-    series_id = kwargs['id']
-    series = Series.objects.filter(pk=series_id)
-    if series:
-        series.delete()
-    return HttpResponseRedirect(reverse('gocra-series-list'))
+    user = request.user
+    player = Player.objects.get(account=user)
+    club = player.get_last_club()
+    if player and club and is_club_admin(user, club):
+        series_id = kwargs['id']
+        series = Series.objects.filter(pk=series_id)
+        if series:
+            series.delete()
+        return HttpResponseRedirect(reverse('gocra-series-list'))
+    else:
+        return HttpResponseRedirect(reverse('gocra-series'))
 
 @login_required
 def series_open(request, *args, **kwargs):
@@ -700,29 +714,35 @@ def series_open(request, *args, **kwargs):
 @login_required
 def series_finalize(request, *args, **kwargs):
     """ Save result ratings for players and close series """
-    series_id = kwargs['id']
-    series = Series.objects.get(pk=series_id)
-    series.seriesIsOpen = False
-    series.save()
-    participant_l = Participant.objects.filter(
-        series=series
-    )
-    for participant in participant_l:
-        try:
-            rating = Rating.objects.get(
-                series=series,
-                player=participant.player
-            )
-        except Rating.DoesNotExist:
-            rating = Rating()
-            rating.series = series
-            rating.player = participant.player
-        rating.old_rank = participant.rank
-        rating.rank = participant.new_rank
-        rating.old_rating = participant.rating
-        rating.rating =  participant.resultrating
-        rating.save()
-    return HttpResponseRedirect(reverse('gocra-series-list'))
+    user = request.user
+    player = Player.objects.get(account=user)
+    club = player.get_last_club()
+    if player and club and is_club_admin(user, club):
+        series_id = kwargs['id']
+        series = Series.objects.get(pk=series_id)
+        series.seriesIsOpen = False
+        series.save()
+        participant_l = Participant.objects.filter(
+            series=series
+        )
+        for participant in participant_l:
+            try:
+                rating = Rating.objects.get(
+                    series=series,
+                    player=participant.player
+                )
+            except Rating.DoesNotExist:
+                rating = Rating()
+                rating.series = series
+                rating.player = participant.player
+            rating.old_rank = participant.rank
+            rating.rank = participant.new_rank
+            rating.old_rating = participant.rating
+            rating.rating =  participant.resultrating
+            rating.save()
+        return HttpResponseRedirect(reverse('gocra-series-list'))
+    else:
+        return HttpResponseRedirect(reverse('gocra-series'))
 
 @login_required
 def set_playing_user(request, *args, **kwargs):
