@@ -2,24 +2,26 @@
 
 {% block title %}Serie{% endblock %}
 {% block actions %}
-  {% if request.user.is_authenticated %}
+  {% if request.user.is_authenticated and not browse %}
       <a class="btn btn-secondary" href="/round/{{ current }}">
       Indeling ronde {{ current }}
       </a>
   {% endif %}
 {% endblock %}
 {% block actions2 %}
-{% if series and user_in_series and not user_paired %}
-  {% if user_playing %}
-    <a class="btn btn-secondary" href="/set_playing_user/{{ series.first.pk }}/0/">
-    Ik doe niet mee! 
-    </a>
-  {% else %}
-    <a class="btn btn-secondary" href="/set_playing_user/{{ series.first.pk }}/1/">
-    Ik doe mee! 
-    </a>
+  {% if not browse %}
+    {% if series and user_in_series and not user_paired %}
+      {% if user_playing %}
+        <a class="btn btn-secondary" href="/set_playing_user/{{ series.first.pk }}/0/">
+        Ik doe niet mee! 
+        </a>
+      {% else %}
+        <a class="btn btn-secondary" href="/set_playing_user/{{ series.first.pk }}/1/">
+        Ik doe mee! 
+        </a>
+      {% endif %}
+    {% endif %}
   {% endif %}
-{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -33,7 +35,7 @@
       <th scope="col">{{ series.first.name }}</th>
       <th> </th>
       {% for round in rounds %}
-	{% if round.round != current and club_admin %}
+	{% if round.round != current and club_admin and not browse %}
 	    <th scope="col" class="text-center" colspan="2">
 		<a href="/series_set_round/{{ round.round }}"> {{ round.name }} </a>
 	    </th>
@@ -44,7 +46,7 @@
 	{% endif %}
       {% endfor %}
 	  <th>
-        {% if club_admin %}
+        {% if club_admin and not browse %}
 		  <a href="/add_round/{{ series.first.id }}"> +R </a> &nbsp
           {% if current < rounds|length %}
 		    <a href="/rem_round/{{ series.first.id }}"> -R </a> &nbsp
@@ -56,7 +58,7 @@
     </tr>
     <tr>
       <th>
-        {% if club_admin %}
+        {% if club_admin and not browse %}
           <a href="/add_participant/{{ series.first.id }}"> + </a> &nbsp &nbsp
           <a href="/add_participant_list/{{ series.first.id }}"> ++ </a>
         {% endif %}
@@ -90,7 +92,7 @@
     {% for p in p_list %}
     <tr>
       <td>
-        {% if club_admin %}
+        {% if club_admin and not browse %}
         <a href="/edit_participant/{{ p.grouper.id }}">{{ p.grouper.nr }}</a>
         {% else %}
         {{ p.grouper.nr }}
@@ -99,7 +101,7 @@
         {{ p.grouper.player.last_name }}
         ({{ p.grouper.rank }})
         {% if not p.grouper.playing %}
-          {% if club_admin %}
+          {% if club_admin and not browse %}
             <a href="/del_participant/{{ p.grouper.pk }}">-</a>
           {% endif %}
         {% endif %}
@@ -129,7 +131,7 @@
         {% for r in round.list %}
           <p class="mb-0">
             {% if r.color == None %}
-              {% if club_admin %}
+              {% if club_admin and not browse %}
                 {% if r.playing %}
                     <a href="/result_set_playing/{{ r.pk }}/0/"
                         class="bg-danger text-white ">- ? -</a>
@@ -137,7 +139,7 @@
                     <a href="/result_set_playing/{{ r.pk }}/1/">o</a>
                 {% endif %}
               {% else %}
-                {% if r.playing and user.is_authenticated %}
+                {% if r.playing and user.is_authenticated and not browse %}
                     <div class="bg-danger text-white ">- ? -</div>
                 {% endif %}
               {% endif %}

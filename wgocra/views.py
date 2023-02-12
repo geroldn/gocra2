@@ -96,26 +96,31 @@ class SeriesDetailView(TemplateView):
         context = super().get_context_data(**kwargs)
         user = self.request.user
         context['series'] = [] #returns length 0 in template if none
+        series_l = None
         #import pdb; pdb.set_trace()
-        if user.is_authenticated:
-            try:
-                player = Player.objects.get(
-                    account=user
-                )
-            except Player.DoesNotExist:
-                player = None
-            if player:
-                club = player.get_last_club()
-                series_l = Series.objects.filter(
-                    club=club
-                ).filter(
-                    seriesIsOpen=True
-                )
+        if "sid" in kwargs.keys():
+            b_sid = kwargs["sid"]
+            browse = True
+            series_l = Series.objects.filter(pk=b_sid)
         else:
-            series_l = Series.objects.filter(
-                seriesIsOpen=True,
-                club=1,
-            )
+            b_sid = None
+            if user.is_authenticated:
+                browse = False
+                try:
+                    player = Player.objects.get(
+                        account=user
+                    )
+                except Player.DoesNotExist:
+                    player = None
+                if player:
+                    club = player.get_last_club()
+                    series_l = Series.objects.filter(
+                        club=club
+                    ).filter(
+                        seriesIsOpen=True
+                    )
+            else:
+                browse = True
         if series_l:
             context['series'] = series_l
             series = series_l[0]
@@ -157,6 +162,7 @@ class SeriesDetailView(TemplateView):
                     'name': 'Ronde {:d}'.format(n_round+1)
                 })
             context['rounds'] = rounds
+            context['browse'] = browse
             context['current'] = current_round_number
             context['club_admin'] = is_club_admin(user, series.club)
         return context

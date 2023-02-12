@@ -33,7 +33,7 @@
                   {% endif %}
                 {% endif %}
             </td>
-            <td> {{ serie.name }} </td>
+            <td><a href="/series/{{ serie.pk }}" >{{ serie.name }}</a></td>
             <td> {{ serie.version }} </td>
             <td>
               {% if club_admin %}

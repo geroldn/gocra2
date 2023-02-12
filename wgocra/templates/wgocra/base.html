@@ -18,7 +18,7 @@
 <body>
   <div class="containerfluid overflow-hidden">
     <nav class="navbar navbar-expand-sm bg-light">
-    {% if request.user.is_authenticated %}
+    {% if request.user.is_authenticated and browse is not True %}
       <a class="navbar-brand" href="/">
        <img src="{% static 'wgocra/gocra_logo.png' %}"
             alt="Logo" style="width:40px;">

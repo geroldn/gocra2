@@ -8,6 +8,8 @@ urlpatterns = [
     path('add_player/<int:uid>/<int:plid>/', views.add_player, name='gocra-add-player'),
     path('add_account/', views.get_add_account, name='gocra-get_add-account'),
     path('series/', views.SeriesDetailView.as_view(), name='gocra-series'),
+    path('series/<int:sid>', views.SeriesDetailView.as_view(),
+         name='gocra-series-browse'),
     path('round/<int:current>', views.RoundDetailView.as_view(), name='gocra-round'),
     path('add_game/<int:p_id>/<int:current>/<int:game>/', views.add_game,
          name='gocra-add-game'),
