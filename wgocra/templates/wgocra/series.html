@@ -1,8 +1,12 @@
 {% extends "wgocra/base.html" %}
 
-{% block title %}Serie{% endblock %}
+{% block title %}{% if browse %}Toernooi Resultaten{% else %}Serie{% endif %}{% endblock %}
 {% block actions %}
-  {% if request.user.is_authenticated and not browse %}
+  {% if browse %}
+    <a class="btn btn-secondary" href="{% url 'gocra-public-series-list' %}">
+    ← Terug naar Overzicht
+    </a>
+  {% elif request.user.is_authenticated %}
       <a class="btn btn-secondary" href="/round/{{ current }}">
       Indeling ronde {{ current }}
       </a>
@@ -25,6 +29,13 @@
 {% endblock %}
 
 {% block content %}
+
+{% if browse and not request.user.is_authenticated %}
+  <div class="alert alert-info mt-3">
+    <strong>Publieke weergave:</strong> U bekijkt de resultaten van een afgerond toernooi. 
+    <a href="{% url 'login' %}">Log in</a> om deel te nemen aan actieve toernooien.
+  </div>
+{% endif %}
 
 {% if series %}
 

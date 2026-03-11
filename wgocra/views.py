@@ -26,7 +26,11 @@ from .ratingsystem import RatingSystem as Rsys
 
 def index(request):
     """ Render the gocra index page """
-    return render(request, 'wgocra/index.html')
+    if request.user.is_authenticated:
+        # Redirect authenticated users to their series view
+        return HttpResponseRedirect(reverse('gocra-series'))
+    else:
+        return render(request, 'wgocra/index.html')
 
 class RoundDetailView(TemplateView):
     """
@@ -101,7 +105,10 @@ class SeriesDetailView(TemplateView):
         if "sid" in kwargs.keys():
             b_sid = kwargs["sid"]
             browse = True
+            # Anonymous users can only browse closed series
             series_l = Series.objects.filter(pk=b_sid)
+            if not user.is_authenticated:
+                series_l = series_l.filter(seriesIsOpen=False)
         else:
             b_sid = None
             if user.is_authenticated:
@@ -344,6 +351,40 @@ def is_club_admin(user, club):
             admin_for=club
         )
     )
+
+class PublicSeriesListView(TemplateView):
+    """
+    Public view listing all closed series available for browsing
+    """
+    template_name = 'wgocra/public_series_list.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Get all closed series grouped by club
+        closed_series = Series.objects.filter(
+            seriesIsOpen=False
+        ).select_related('club').order_by('club__name', '-startDate')
+        
+        # Group series by club
+        clubs_series = {}
+        for series in closed_series:
+            club = series.club
+            if club:
+                if club not in clubs_series:
+                    clubs_series[club] = []
+                clubs_series[club].append(series)
+        
+        # Convert to list format for template
+        series_list = []
+        for club, series in clubs_series.items():
+            series_list.append({
+                'club': club,
+                'series': series[:10]  # Limit to 10 most recent per club
+            })
+        
+        context['series_list'] = series_list
+        return context
 
 @login_required
 def club_select(request, *args, **kwargs):

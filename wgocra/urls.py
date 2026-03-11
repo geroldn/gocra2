@@ -2,7 +2,8 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('', views.SeriesDetailView.as_view(), name='gocra-series'),
+    path('', views.index, name='gocra-index'),
+    path('browse/', views.PublicSeriesListView.as_view(), name='gocra-public-series-list'),
     path('clubs/', views.ClubListView.as_view(), name='gocra-clubs'),
     path('players/<int:user>/', views.PlayerListView.as_view(), name='gocra-players'),
     path('add_player/<int:uid>/<int:plid>/', views.add_player, name='gocra-add-player'),
