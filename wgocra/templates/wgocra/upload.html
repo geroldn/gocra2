@@ -1,7 +1,7 @@
 {% extends "wgocra/base_dialog.html" %}
 
 {% block title %}
-  Upload MacMahon xml file
+  MacMahon xml uploaden
 {% endblock %}
 
 {% block content %}
@@ -9,8 +9,8 @@
 <form action="/upload/" method="post" enctype="multipart/form-data">
    {% csrf_token %}
    {{ form.as_p }}
-     <input type="submit" value="Submit">
-     <a href="/series"> Cancel </a>
+     <input type="submit" value="Uploaden">
+     <a href="/series"> Annuleren </a>
 </form>
 
 {% endblock %}

@@ -1,7 +1,7 @@
 {% extends "wgocra/base_dialog.html" %}
 
 {% block title %}
-Choose or add user account
+Account zoeken of aanmaken
 {% endblock %}
 
 {% block content %}
@@ -9,13 +9,13 @@ Choose or add user account
 <form action="/add_account/" method="post">
    {% csrf_token %}
    <p>
-   Enter email address (existing or new user):
+   Voer e-mailadres in (bestaand of nieuw):
    </p>
    <tabel>
    {{ form.as_table }}
    </tabel>
-     <input type="submit" value="Submit">
-     <a href="/series"> Cancel </a>
+     <input type="submit" value="Zoeken">
+     <a href="/series"> Annuleren </a>
 </form>
 
 {% endblock %}

@@ -3,7 +3,7 @@
 {% block title %}{% if browse %}Toernooi Resultaten{% else %}Serie{% endif %}{% endblock %}
 {% block actions %}
   {% if browse %}
-    <a class="btn btn-secondary" href="{% url 'gocra-public-series-list' %}">
+    <a class="btn btn-secondary" href="{% url 'gocra-public-series-list' %}?club={{ series.first.club.pk }}">
     ← Terug naar Overzicht
     </a>
   {% elif request.user.is_authenticated %}
@@ -29,13 +29,6 @@
 {% endblock %}
 
 {% block content %}
-
-{% if browse and not request.user.is_authenticated %}
-  <div class="alert alert-info mt-3">
-    <strong>Publieke weergave:</strong> U bekijkt de resultaten van een afgerond toernooi. 
-    <a href="{% url 'login' %}">Log in</a> om deel te nemen aan actieve toernooien.
-  </div>
-{% endif %}
 
 {% if series %}
 

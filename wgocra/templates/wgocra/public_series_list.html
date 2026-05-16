@@ -1,36 +1,52 @@
 {% extends "wgocra/base.html" %}
 
-{% block title %}Afgeronde Toernooien{% endblock %}
+{% block title %}Archief{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
-    <h1>Afgeronde Toernooien</h1>
+    <h1>Archief</h1>
     <p>Bekijk de resultaten van afgeronde Go toernooien.</p>
     
     {% if series_list %}
-        <div class="row">
+        <div id="archief-accordion">
             {% for club_series in series_list %}
-                <div class="col-md-6 mb-4">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5>{{ club_series.club.name }} - {{ club_series.club.city }}</h5>
-                        </div>
-                        <div class="card-body">
+                <div class="card mb-2">
+                    <div class="card-header p-0" id="heading-{{ forloop.counter }}">
+                        <h5 class="mb-0">
+                            <button class="btn btn-link btn-block text-left collapsed"
+                                    data-toggle="collapse"
+                                    data-target="#collapse-{{ forloop.counter }}"
+                                    data-parent="#archief-accordion"
+                                    aria-expanded="false"
+                                    aria-controls="collapse-{{ forloop.counter }}">
+                                {{ club_series.club.name }} — {{ club_series.club.city }}
+                            </button>
+                        </h5>
+                    </div>
+                    <div id="collapse-{{ forloop.counter }}" class="collapse"
+                         aria-labelledby="heading-{{ forloop.counter }}"
+                         data-parent="#archief-accordion"
+                         data-club-id="{{ club_series.club.pk }}">
+                        <div class="card-body p-0">
                             {% if club_series.series %}
-                                <div class="list-group">
+                                <div class="list-group list-group-flush">
                                     {% for series in club_series.series %}
                                         <a href="/series/{{ series.id }}" class="list-group-item list-group-item-action">
-                                            <div class="d-flex w-100 justify-content-between">
-                                                <h6 class="mb-1">{{ series.name }}</h6>
-                                                <small>{{ series.startDate|date:"M Y" }}</small>
+                                            <div class="d-flex w-100 justify-content-between align-items-start">
+                                                <div>
+                                                    <h6 class="mb-0">{{ series.name }}</h6>
+                                                    <small class="text-muted">{{ series.numberOfRounds }} ronden</small>
+                                                </div>
+                                                <div class="text-right">
+                                                    <small>{{ series.startDate|date:"M Y" }}</small><br>
+                                                    <small class="text-muted">v{{ series.version }}</small>
+                                                </div>
                                             </div>
-                                            <p class="mb-1">{{ series.numberOfRounds }} ronden</p>
-                                            <small>Versie {{ series.version }}</small>
                                         </a>
                                     {% endfor %}
                                 </div>
                             {% else %}
-                                <p class="text-muted">Geen afgeronde toernooien beschikbaar</p>
+                                <p class="text-muted p-3 mb-0">Geen toernooien beschikbaar</p>
                             {% endif %}
                         </div>
                     </div>
@@ -39,7 +55,7 @@
         </div>
     {% else %}
         <div class="alert alert-info">
-            Er zijn momenteel geen afgeronde toernooien beschikbaar om te bekijken.
+            Er zijn momenteel geen toernooien beschikbaar om te bekijken.
         </div>
     {% endif %}
     
@@ -49,4 +65,16 @@
         </div>
     {% endif %}
 </div>
+<script>
+  $(function() {
+    var clubId = new URLSearchParams(window.location.search).get('club');
+    if (clubId) {
+      var panel = $('[data-club-id="' + clubId + '"]');
+      if (panel.length) {
+        panel.collapse('show');
+      }
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  });
+</script>
 {% endblock %}

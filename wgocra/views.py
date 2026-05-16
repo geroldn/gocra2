@@ -283,7 +283,7 @@ class SeriesListView(TemplateView):
             club = None
         series_l = Series.objects.filter(
             club=club
-        ).order_by('-name', '-version')
+        ).order_by('-startDate', '-version')
         context['series'] = series_l
         return context
 
@@ -430,6 +430,8 @@ def user_result(request, *args,**kwargs):
 @login_required
 def add_round(request, *args, **kwargs):
     series = Series.objects.get(pk=kwargs['sid'])
+    if not is_club_admin(request.user, series.club):
+        return HttpResponseRedirect(reverse('gocra-series'))
     round = series.numberOfRounds + 1
     series.numberOfRounds = round
     series.save()
@@ -448,6 +450,8 @@ def add_round(request, *args, **kwargs):
 @login_required
 def rem_round(request, *args, **kwargs):
     series = Series.objects.get(pk=kwargs['sid'])
+    if not is_club_admin(request.user, series.club):
+        return HttpResponseRedirect(reverse('gocra-series'))
     participants = Participant.objects.filter(
         series=series
     )
@@ -470,7 +474,7 @@ def del_participant(request, *args, **kwargs):
     #    ).filter(
             participant=participant
         ).delete()
-    participant.delete()
+        participant.delete()
     return HttpResponseRedirect(reverse('gocra-series'))
 
 def add_participant_to_series(series, player):
@@ -714,6 +718,8 @@ def series_set_round(request, *args, **kwargs):
     user = request.user
     player = Player.objects.get(account=user)
     club = player.get_last_club()
+    if not club or not is_club_admin(user, club):
+        return HttpResponseRedirect(reverse('gocra-series'))
     qs1 = Series.objects.filter(seriesIsOpen=True, club=club)
     if qs1:
         series = qs1[0]
@@ -730,13 +736,10 @@ def series_set_round(request, *args, **kwargs):
 def series_delete(request, *args, **kwargs):
     """ Delete specific series """
     user = request.user
-    player = Player.objects.get(account=user)
-    club = player.get_last_club()
-    if player and club and is_club_admin(user, club):
-        series_id = kwargs['id']
-        series = Series.objects.filter(pk=series_id)
-        if series:
-            series.delete()
+    series_id = kwargs['id']
+    series = Series.objects.filter(pk=series_id).first()
+    if series and is_club_admin(user, series.club):
+        series.delete()
         return HttpResponseRedirect(reverse('gocra-series-list'))
     else:
         return HttpResponseRedirect(reverse('gocra-series'))
@@ -745,28 +748,25 @@ def series_delete(request, *args, **kwargs):
 def series_open(request, *args, **kwargs):
     """ Set specific series as open """
     user = request.user
-    player = Player.objects.get(account=user)
-    club = player.get_last_club()
     series_id = kwargs['id']
-    qs1 = Series.objects.filter(seriesIsOpen=True, club=club)
+    target_series = Series.objects.filter(pk=series_id).first()
+    if not target_series or not is_club_admin(user, target_series.club):
+        return HttpResponseRedirect(reverse('gocra-series'))
+    qs1 = Series.objects.filter(seriesIsOpen=True, club=target_series.club)
     for series in qs1:
         series.seriesIsOpen = False
         series.save()
-    qs2 = Series.objects.filter(pk=series_id)
-    for series in qs2:
-        series.seriesIsOpen = True
-        series.save()
+    target_series.seriesIsOpen = True
+    target_series.save()
     return HttpResponseRedirect(reverse('gocra-series-list'))
 
 @login_required
 def series_finalize(request, *args, **kwargs):
     """ Save result ratings for players and close series """
     user = request.user
-    player = Player.objects.get(account=user)
-    club = player.get_last_club()
-    if player and club and is_club_admin(user, club):
-        series_id = kwargs['id']
-        series = Series.objects.get(pk=series_id)
+    series_id = kwargs['id']
+    series = Series.objects.filter(pk=series_id).first()
+    if series and is_club_admin(user, series.club):
         series.seriesIsOpen = False
         series.save()
         participant_l = Participant.objects.filter(
@@ -814,11 +814,12 @@ def set_playing_user(request, *args, **kwargs):
 def result_set_playing(request, *args, **kwargs):
     """ Toggle round result as playing for player """
     result_id = kwargs['id']
+    result = Result.objects.filter(pk=result_id).first()
+    if not result or not is_club_admin(request.user, result.participant.series.club):
+        return HttpResponseRedirect(reverse('gocra-series'))
     playing = ( kwargs['playing'] == 1 )
-    qs1 = Result.objects.filter(pk=result_id)
-    for result in qs1:
-        result.playing = playing
-        result.save()
+    result.playing = playing
+    result.save()
     return HttpResponseRedirect(reverse('gocra-series'))
 
 @login_required
@@ -827,6 +828,8 @@ def wins_game(request, *args, **kwargs):
     color = kwargs['color']
     result_id = kwargs['r_id']
     result = Result.objects.get(id=result_id)
+    if not is_club_admin(request.user, result.participant.series.club):
+        return HttpResponseRedirect(reverse('gocra-series'))
     current = result.round
     result2 = result.opponent_result
     if result2 == None:
@@ -853,6 +856,8 @@ def add_game(request, *args, **kwargs):
     candidate = kwargs['p_id']
     igame = kwargs['game']
     p_candidate = Participant.objects.get(id=candidate)
+    if not is_club_admin(request.user, p_candidate.series.club):
+        return HttpResponseRedirect(reverse('gocra-series'))
     if igame == 1:
         new_game = Result.objects.get(participant=p_candidate,
                                 round=current)
@@ -913,6 +918,8 @@ def add_game(request, *args, **kwargs):
 def del_game(request, *args, **kwargs):
     result_id = kwargs['r_id']
     result = Result.objects.get(id=result_id)
+    if not is_club_admin(request.user, result.participant.series.club):
+        return HttpResponseRedirect(reverse('gocra-series'))
     result2_l = Result.objects.filter(round=result.round,
                                  participant=result.opponent)
     round = result.round
@@ -949,6 +956,8 @@ def make_pairing(request, *args, **kwargs):
     cuser = request.user
     cplayer = Player.objects.get(account=cuser)
     cclub = cplayer.get_last_club()
+    if not cclub or not is_club_admin(cuser, cclub):
+        return HttpResponseRedirect(reverse('gocra-series'))
     series_l = Series.objects.filter(seriesIsOpen=True, club=cclub)
     if series_l:
         series = series_l[0]
@@ -1084,6 +1093,8 @@ def drop_pairing(request, *args, **kwargs):
     cuser = request.user
     cplayer = Player.objects.get(account=cuser)
     cclub = cplayer.get_last_club()
+    if not cclub or not is_club_admin(cuser, cclub):
+        return HttpResponseRedirect(reverse('gocra-series'))
     results = Result.objects.filter(
         participant__series__seriesIsOpen=True,
         participant__series__club=cclub

@@ -1,7 +1,7 @@
 {% extends "wgocra/base_dialog.html" %}
 
 {% block title %}
-add Player
+Speler Toevoegen
 {% endblock %}
 
 {% block content %}
@@ -9,15 +9,15 @@ add Player
 <form action="/add_player/{{ uid }}/{{ plid }}/" method="post">
    {% csrf_token %}
    <p>
-   Enter 'tussenvoegsels' as postfix in firstname seperated by '_'.<br>
-   e.g. Pipo van der Clown becomes<br>
-   first name: Pipo_van_der; last name: Clown
+   Voer tussenvoegsels in als achtervoegsel bij voornaam, gescheiden door '_'.<br>
+   bijv. Pipo van der Clown wordt:<br>
+   voornaam: Pipo_van_der; achternaam: Clown
    </p>
    <tabel>
    {{ form.as_table }}
    </tabel>
-     <input type="submit" value="Submit">
-     <a href="/series"> Cancel </a>
+     <input type="submit" value="Opslaan">
+     <a href="/series"> Annuleren </a>
 </form>
 
 {% endblock %}

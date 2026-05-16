@@ -1,37 +1,65 @@
-{% extends "base_generic.html" %}
+{% extends "wgocra/base.html" %}
+{% load bootstrap4 %}
+
+{% block title %}Inloggen{% endblock %}
+
+{% block head-extra %}
+  <style>
+    .login-wrapper {
+      min-height: calc(100vh - 160px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+    .login-card {
+      width: 100%;
+      max-width: 400px;
+      background: #fff;
+      border-radius: 0.5rem;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+      padding: 2.5rem 2rem;
+    }
+    .login-card h2 {
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+    }
+  </style>
+{% endblock %}
 
 {% block content %}
+  <div class="login-wrapper">
+    <div class="login-card">
+      <h2 class="text-center">Inloggen</h2>
 
-  {% if form.errors %}
-    <p>Your username and password didn't match. Please try again.</p>
-  {% endif %}
+      {% if form.errors %}
+        <div class="alert alert-danger" role="alert">
+          Gebruikersnaam en wachtwoord komen niet overeen. Probeer het opnieuw.
+        </div>
+      {% endif %}
 
-  {% if next %}
-    {% if user.is_authenticated %}
-      <p>Your account doesn't have access to this page. To proceed,
-      please login with an account that has access.</p>
-    {% else %}
-      <p>Please login to see this page.</p>
-    {% endif %}
-  {% endif %}
+      {% if next %}
+        {% if user.is_authenticated %}
+          <div class="alert alert-warning" role="alert">
+            Je account heeft geen toegang tot deze pagina. Log in met een ander account.
+          </div>
+        {% else %}
+          <div class="alert alert-info" role="alert">
+            Log in om deze pagina te bekijken.
+          </div>
+        {% endif %}
+      {% endif %}
 
-  <form method="post" action="{% url 'login' %}">
-    {% csrf_token %}
-    <table>
-      <tr>
-        <td>{{ form.username.label_tag }}</td>
-        <td>{{ form.username }}</td>
-      </tr>
-      <tr>
-        <td>{{ form.password.label_tag }}</td>
-        <td>{{ form.password }}</td>
-      </tr>
-    </table>
-    <input type="submit" value="login" />
-    <input type="hidden" name="next" value="{{ next }}" />
-  </form>
+      <form method="post" action="{% url 'login' %}">
+        {% csrf_token %}
+        {% bootstrap_form form %}
+        <input type="hidden" name="next" value="{{ next }}" />
+        <button type="submit" class="btn btn-primary btn-block mt-3">Inloggen</button>
+      </form>
 
-  {# Assumes you setup the password_reset view in your URLconf #}
-  <p><a href="{% url 'password_reset' %}">Lost password?</a></p>
-
+      <div class="text-center mt-3">
+        <a href="{% url 'password_reset' %}">Wachtwoord vergeten?</a>
+      </div>
+    </div>
+  </div>
 {% endblock %}

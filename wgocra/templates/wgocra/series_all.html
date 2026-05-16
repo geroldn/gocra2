@@ -6,7 +6,7 @@
   Nieuwe serie
   </a>
   <a class="btn btn-secondary" href="/upload/">
-  Upload MacMahon xml
+  MacMahon xml uploaden
   </a>
 {% endblock %}
 
@@ -16,9 +16,10 @@
 <table class="table">
     <thead>
         <tr>
-            <th scope="col">open</th>
-            <th scope="col">serie</th>
-            <th scope="col">versie</th>
+            <th scope="col">Open</th>
+            <th scope="col">Serie</th>
+            <th scope="col">Startdatum</th>
+            <th scope="col">Versie</th>
         </tr>
     </thead>
     <tbody>
@@ -34,14 +35,12 @@
                 {% endif %}
             </td>
             <td><a href="/series/{{ serie.pk }}" >{{ serie.name }}</a></td>
+            <td>{{ serie.startDate|date:"M Y" }}</td>
             <td> {{ serie.version }} </td>
             <td>
               {% if club_admin %}
                 {% if serie.seriesIsOpen %}
-                  <a href="/series_finalize/{{ serie.pk }}">finalize</a>
-                {% endif %}
-                {% if not serie.seriesIsOpen %}
-                  <a href="/series_delete/{{ serie.pk }}">delete</a>
+                  <a href="/series_finalize/{{ serie.pk }}">Afsluiten</a>
                 {% endif %}
               {% endif %}
             </td>

@@ -13,31 +13,36 @@
       background-repeat: no-repeat;
       background-attachment: fixed;
     }
-    .gocra-home-overlay {
-      min-height: calc(100vh - 120px);
-      padding: 2rem 1rem;
-    }
-    .gocra-home-card {
-      max-width: 720px;
-      background: rgba(255, 255, 255, 0.9);
-      border-radius: 0.5rem;
-      padding: 1.5rem;
-    }
   </style>
 {% endblock %}
 
 {% block content %}
-  <div class="gocra-home-overlay d-flex align-items-start align-items-md-center justify-content-center">
-    <div class="gocra-home-card shadow">
-      <h2 class="mb-3">GOCRA</h2>
-      <p class="mb-4">
-        Toernooibeheer en ratingverwerking voor Go.
-      </p>
 
-      <div class="d-flex flex-column flex-sm-row">
-        <a class="btn btn-primary mr-sm-2 mb-2 mb-sm-0" href="{% url 'gocra-public-series-list' %}">Afgeronde Toernooien</a>
-        <a class="btn btn-outline-secondary" href="{% url 'login' %}">Login</a>
+  <!-- Logout modal -->
+  <div class="modal fade" id="loggedOutModal" tabindex="-1" role="dialog" aria-labelledby="loggedOutModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title" id="loggedOutModalLabel">Uitgelogd</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Sluiten">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body text-center pt-2">
+          <p>Je bent succesvol uitgelogd.</p>
+          <a href="{% url 'login' %}" class="btn btn-primary btn-block">Opnieuw inloggen</a>
+        </div>
       </div>
     </div>
   </div>
+
+  <script>
+    $(function() {
+      if (new URLSearchParams(window.location.search).get('logged_out')) {
+        $('#loggedOutModal').modal('show');
+        // Clean up the URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    });
+  </script>
 {% endblock %}

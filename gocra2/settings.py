@@ -145,6 +145,7 @@ django_heroku.settings(locals())
 
 # Redirect to home URL after login (Default redirects to /accounts/profile/)
 LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/?logged_out=1'
 
 # SMTP relay settings
 SECRET_KEY = os.environ['DJANGO_SECRET']

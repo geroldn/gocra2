@@ -1,6 +1,6 @@
 {% extends "wgocra/base.html" %}
 
-{% block title %}Players{% endblock %}
+{% block title %}Spelers{% endblock %}
 
 {% block content %}
   {% if club_admin %}
@@ -16,7 +16,7 @@
     {{ player.account.email }}
     )</li>
 {% empty %}
-    <li>No players yet.</li>
+    <li>Geen spelers gevonden.</li>
 {% endfor %}
 </ul>
 {% endblock %}

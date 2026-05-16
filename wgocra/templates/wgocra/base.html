@@ -18,19 +18,17 @@
 <body>
   <div class="containerfluid overflow-hidden">
     <nav class="navbar navbar-expand-sm bg-light">
-      <a class="navbar-brand" href="{% if request.user.is_authenticated %}/{% else %}/browse/{% endif %}">
+      <a class="navbar-brand" href="/">
        <img src="{% static 'wgocra/gocra_logo.png' %}"
             alt="Logo" style="width:40px;">
       </a>
       <ul class="navbar-nav">
-        {% if not request.user.is_authenticated or browse %}
-          <li class="nav-item">
-            <a class="nav-link" href="{% url 'gocra-public-series-list' %}">Afgeronde Toernooien</a>
-          </li>
-        {% endif %}
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'gocra-public-series-list' %}">Archief</a>
+        </li>
         {% if request.user.is_authenticated and browse is not True %}
           <li class="nav-item">
-              <a class="nav-link" href="/players/{{user.pk}}/">Players</a>
+              <a class="nav-link" href="/players/{{user.pk}}/">Spelers</a>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="/clubs/">Clubs</a>
@@ -48,9 +46,9 @@
       <div class="navbar-text ml-auto mr-2">
         {% if request.user.is_authenticated %}
          {{ request.user.username }}
-         <a href="/accounts/logout">  ...Logout </a>
+         <a href="/accounts/logout">  Uitloggen </a>
          {% else %}
-           <a href="/accounts/login">  Login </a>
+           <a href="/accounts/login">  Inloggen </a>
          {% endif %}
       </div>
 
