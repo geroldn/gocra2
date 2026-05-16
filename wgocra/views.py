@@ -2,6 +2,7 @@
 # Create your views here.
 #import logging
 import datetime
+import json
 import string
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
@@ -9,7 +10,7 @@ from django.contrib.auth import models as auth_models
 from django.utils.decorators import method_decorator
 from django.db.models import Exists, OuterRef
 from django.shortcuts import render, reverse
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse
 from django.views.generic import ListView, TemplateView
 from random import randrange, seed, choices
 #from random import randrange, seed
@@ -151,6 +152,15 @@ class SeriesDetailView(TemplateView):
                                    game=1
                                   ).playing
             self.rank_participants(participants, playing_dict, series)
+            participants_modal = []
+            for p in Participant.objects.filter(series=series).select_related('player').order_by('player__first_name', 'player__last_name'):
+                participants_modal.append({
+                    'id': p.id,
+                    'name': '{} {}'.format(p.player.first_name, p.player.last_name),
+                    'rank': p.rank,
+                    'playing': playing_dict.get('{:d}'.format(p.id), False),
+                })
+            context['participants_modal_json'] = json.dumps(participants_modal)
             series_results = Result.objects.filter(
                 participant__series=series
             ).order_by('participant__nr', 'round', 'game')
@@ -821,6 +831,24 @@ def result_set_playing(request, *args, **kwargs):
     result.playing = playing
     result.save()
     return HttpResponseRedirect(reverse('gocra-series'))
+
+@login_required
+def set_round_players(request, series_id, round_nr):
+    """Bulk-set which participants are playing in a given round."""
+    series = Series.objects.get(pk=series_id)
+    if not is_club_admin(request.user, series.club):
+        return JsonResponse({'error': 'Forbidden'}, status=403)
+    data = json.loads(request.body)
+    playing_ids = set(data.get('playing_ids', []))
+    results = Result.objects.filter(
+        participant__series=series,
+        round=round_nr,
+        game=1,
+    )
+    for result in results:
+        result.playing = result.participant_id in playing_ids
+        result.save()
+    return JsonResponse({'status': 'ok'})
 
 @login_required
 def wins_game(request, *args, **kwargs):

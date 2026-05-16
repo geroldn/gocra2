@@ -10,6 +10,11 @@
       <a class="btn btn-secondary" href="/round/{{ current }}">
       Indeling ronde {{ current }}
       </a>
+      {% if club_admin %}
+      <button type="button" class="btn btn-secondary" data-toggle="modal" data-target="#spelersRondeModal">
+        Spelers in ronde
+      </button>
+      {% endif %}
   {% endif %}
 {% endblock %}
 {% block actions2 %}
@@ -137,10 +142,10 @@
             {% if r.color == None %}
               {% if club_admin and not browse %}
                 {% if r.playing %}
-                    <a href="/result_set_playing/{{ r.pk }}/0/"
-                        class="bg-danger text-white ">- ? -</a>
+                    <a href="#" onclick="openSpelersModal({{ r.participant.id }}); return false;"
+                        class="bg-danger text-white">- ? -</a>
                 {% else %}
-                    <a href="/result_set_playing/{{ r.pk }}/1/">o</a>
+                    <a href="#" onclick="openSpelersModal({{ r.participant.id }}); return false;">o</a>
                 {% endif %}
               {% else %}
                 {% if r.playing and user.is_authenticated and not browse %}
@@ -199,6 +204,170 @@
 {% else %}
 
 <h1> NO DATA </h1>
-    
+
 {% endif %}
+
+{% if club_admin and not browse %}
+<div class="modal fade" id="spelersRondeModal" tabindex="-1" role="dialog" aria-labelledby="spelersRondeLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="spelersRondeLabel">Spelers in ronde {{ current }}</h5>
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-6">
+            <h6>Deelnemers serie</h6>
+            <input type="text" id="spelersFilter" class="form-control form-control-sm mb-2" placeholder="Filter op naam...">
+            <div class="list-group" id="deelnemersList" style="max-height:380px; overflow-y:auto;"></div>
+          </div>
+          <div class="col-6">
+            <h6>Spelen in ronde {{ current }}</h6>
+            <div class="list-group" id="playingList" style="max-height:380px; overflow-y:auto;"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuleren</button>
+        <button type="button" class="btn btn-primary" id="savePlayersBtn">Opslaan</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var participantsData = {{ participants_modal_json|safe }};
+  var seriesId = {{ series.first.id }};
+  var currentRound = {{ current }};
+  var csrfToken = '{{ csrf_token }}';
+  var playingIds, notPlayingIds;
+  var focusedIndex = 0;
+  var pendingPlayingId = null;
+
+  function initState() {
+    playingIds = new Set(participantsData.filter(function(p){ return p.playing; }).map(function(p){ return p.id; }));
+    notPlayingIds = new Set(participantsData.filter(function(p){ return !p.playing; }).map(function(p){ return p.id; }));
+    focusedIndex = 0;
+  }
+
+  window.openSpelersModal = function(participantId) {
+    pendingPlayingId = participantId;
+    $('#spelersRondeModal').modal('show');
+  };
+
+  function getVisibleLeft() {
+    var filterText = document.getElementById('spelersFilter').value.toLowerCase();
+    return participantsData.filter(function(p) {
+      if (!notPlayingIds.has(p.id)) return false;
+      if (filterText && p.name.toLowerCase().indexOf(filterText) === -1) return false;
+      return true;
+    });
+  }
+
+  function selectFocused(visible) {
+    if (!visible.length) return;
+    var p = visible[focusedIndex];
+    notPlayingIds.delete(p.id);
+    playingIds.add(p.id);
+    document.getElementById('spelersFilter').value = '';
+    focusedIndex = 0;
+    renderLists();
+  }
+
+  function renderLists() {
+    var visible = getVisibleLeft();
+    if (focusedIndex >= visible.length) focusedIndex = Math.max(0, visible.length - 1);
+
+    var deelnemersList = document.getElementById('deelnemersList');
+    var playingList = document.getElementById('playingList');
+    deelnemersList.innerHTML = '';
+    playingList.innerHTML = '';
+
+    var filterActive = document.getElementById('spelersFilter').value.length > 0;
+    visible.forEach(function(p, idx) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'list-group-item list-group-item-action py-1' + (filterActive && idx === focusedIndex ? ' active' : '');
+      btn.textContent = p.name + ' (' + p.rank + ')';
+      btn.onclick = (function(pid) { return function() {
+        notPlayingIds.delete(pid);
+        playingIds.add(pid);
+        document.getElementById('spelersFilter').value = '';
+        focusedIndex = 0;
+        renderLists();
+      }; })(p.id);
+      deelnemersList.appendChild(btn);
+    });
+
+    var activeBtn = deelnemersList.querySelector('.active');
+    if (activeBtn) activeBtn.scrollIntoView({ block: 'nearest' });
+
+    participantsData.forEach(function(p) {
+      if (playingIds.has(p.id)) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'list-group-item list-group-item-action py-1 list-group-item-success';
+        btn.textContent = p.name + ' (' + p.rank + ')';
+        btn.onclick = (function(pid) { return function() {
+          playingIds.delete(pid);
+          notPlayingIds.add(pid);
+          renderLists();
+        }; })(p.id);
+        playingList.appendChild(btn);
+      }
+    });
+  }
+
+  $('#spelersRondeModal').on('show.bs.modal', function () {
+    initState();
+    if (pendingPlayingId !== null) {
+      notPlayingIds.delete(pendingPlayingId);
+      playingIds.add(pendingPlayingId);
+      pendingPlayingId = null;
+    }
+    document.getElementById('spelersFilter').value = '';
+    renderLists();
+    setTimeout(function(){ document.getElementById('spelersFilter').focus(); }, 300);
+  });
+
+  document.getElementById('spelersFilter').addEventListener('input', function () {
+    focusedIndex = 0;
+    renderLists();
+  });
+
+  document.getElementById('spelersFilter').addEventListener('keydown', function (e) {
+    var visible = getVisibleLeft();
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusedIndex = Math.min(focusedIndex + 1, visible.length - 1);
+      renderLists();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusedIndex = Math.max(focusedIndex - 1, 0);
+      renderLists();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      selectFocused(visible);
+    }
+  });
+
+  document.getElementById('savePlayersBtn').addEventListener('click', function () {
+    fetch('/set_round_players/' + seriesId + '/' + currentRound + '/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+      body: JSON.stringify({ playing_ids: Array.from(playingIds) })
+    }).then(function (response) {
+      if (response.ok) {
+        window.location.reload();
+      } else {
+        alert('Er is een fout opgetreden bij het opslaan.');
+      }
+    });
+  });
+})();
+</script>
+{% endif %}
+
 {% endblock %}

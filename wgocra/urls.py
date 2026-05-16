@@ -50,4 +50,6 @@ urlpatterns = [
          name='gocra_edit_participant'),
     path('del_participant/<int:pid>/', views.del_participant,
          name='gocra_del_participant'),
+    path('set_round_players/<int:series_id>/<int:round_nr>/', views.set_round_players,
+         name='gocra-set-round-players'),
 ]
